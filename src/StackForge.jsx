@@ -1233,51 +1233,6 @@ function ArchDiagram({resources,microservices,cloud,deployTarget}){
 }
 
 
-// ─── ArchDiagram ─────────────────────────────────────────────────────────
-function ArchDiagram({resources,cloud}){
-  if(!resources.length)return null;
-  const groups={};
-  resources.forEach(r=>{if(!groups[r.cat])groups[r.cat]=[];groups[r.cat].push(r);});
-  const cats=Object.keys(groups);
-  const colW=Math.min(155,Math.floor(620/cats.length));
-  const maxRows=Math.max(...cats.map(c=>groups[c].length));
-  const svgH=Math.max(160,60+maxRows*50+20);
-  const palette=(CAT_BG[cloud]||CAT_BG.aws);
-  // Connection lines: ALB→compute, compute→DB, compute→cache
-  const connections=[];
-  const getX=(cat,offset=0)=>{const ci=cats.indexOf(cat);return ci>=0?20+ci*(colW+8)+colW/2+offset:-1;};
-  const netX=getX("Network"),compX=getX("Compute"),dbX=getX("Database"),storeX=getX("Storage");
-  if(netX>0&&compX>0)connections.push([netX,50,compX,50,"#38bdf880"]);
-  if(compX>0&&dbX>0)connections.push([compX,50,dbX,50,"#22c55e80"]);
-  if(compX>0&&storeX>0)connections.push([compX,50,storeX,50,"#f59e0b80"]);
-  return(
-    <div style={{background:"#060d1a",border:"1px solid #1e3a5f",borderRadius:11,padding:14,marginBottom:14}}>
-      <div style={{fontSize:10,color:"#38bdf8",letterSpacing:2,fontFamily:"JetBrains Mono",marginBottom:10}}>🗺 ARCHITECTURE PREVIEW</div>
-      <svg viewBox={`0 0 680 ${svgH}`} width="100%" style={{display:"block"}}>
-        <defs><marker id="aarrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round"/></marker></defs>
-        {connections.map(([x1,_y1,x2,_y2,col],i)=><line key={i} x1={x1} y1={svgH/2} x2={x2} y2={svgH/2} stroke={col} strokeWidth={1.5} strokeDasharray="5,3" markerEnd="url(#aarrow)"/>)}
-        {cats.map((cat,ci)=>{
-          const x=20+ci*(colW+8);
-          const col=palette[cat]||"#475569";
-          return <g key={cat}>
-            <rect x={x} y={10} width={colW} height={svgH-20} rx={8} fill={col+"12"} stroke={col} strokeWidth={0.5} strokeDasharray="5,3"/>
-            <text x={x+colW/2} y={26} textAnchor="middle" style={{fontSize:9,fill:col,fontFamily:"JetBrains Mono",fontWeight:700}}>{cat.toUpperCase()}</text>
-            {groups[cat].map((r,ri)=>{
-              const ry=36+ri*48;
-              return <g key={r.serviceId}>
-                <rect x={x+6} y={ry} width={colW-12} height={40} rx={6} fill={col+"22"} stroke={col} strokeWidth={0.5}/>
-                <text x={x+colW/2} y={ry+14} textAnchor="middle" style={{fontSize:10,fill:col,fontFamily:"JetBrains Mono",fontWeight:700}}>{r.abbr}</text>
-                <text x={x+colW/2} y={ry+27} textAnchor="middle" style={{fontSize:8,fill:"#94a3b8",fontFamily:"JetBrains Mono"}}>{r.names.slice(0,2).join(", ").slice(0,colW/6)}</text>
-                {r.count>1&&<text x={x+colW-8} y={ry+11} textAnchor="middle" style={{fontSize:8,fill:col,fontFamily:"JetBrains Mono"}}>×{r.count}</text>}
-              </g>;
-            })}
-          </g>;
-        })}
-      </svg>
-    </div>
-  );
-}
-
 // ─── CostSummary ──────────────────────────────────────────────────────────
 function CostSummary({resources,cloud}){
   const cm=COST_MAP[cloud]||{};
