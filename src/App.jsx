@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase.js'
 import AuthPage from './AuthPage.jsx'
+import LandingPage from './LandingPage.jsx'
 import StackForge from './StackForge.jsx'
 
 export default function App() {
@@ -53,7 +54,7 @@ export default function App() {
   )
 
   // ── Not logged in ────────────────────────────────────────────────────────
-  if (!session) return <AuthPage />
+  if (!session) return showAuth ? <AuthPage /> : <LandingPage onSignIn={() => setShowAuth(true)} />
 
   // ── Logged in but no active subscription ────────────────────────────────
   const isActive = sub?.status === 'active'
