@@ -9,6 +9,7 @@ export default function App() {
   const [sub, setSub]               = useState(null)  // subscription row
   const [loading, setLoading]       = useState(true)
   const [subLoading, setSubLoading] = useState(false)
+  const [showAuth, setShowAuth]     = useState(false)   // ← ADD THIS LINE
 
   // ── Listen for auth changes ──────────────────────────────────────────────
   useEffect(() => {
