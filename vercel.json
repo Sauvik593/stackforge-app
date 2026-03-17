@@ -2,5 +2,15 @@
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  ],
+  "functions": {
+    "api/claude.js": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 60
+    },
+    "api/webhook.js": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 30
+    }
+  }
 }

@@ -573,6 +573,7 @@ const svcSummary=ss=>ss.length?ss.map(s=>`- ${s.name} (port ${s.port})`).join("\
 const makePrompts=f=>{
   const isHelm=["eks","aks","gke"].includes(f.deployTarget);
   const isEC2Like=["ec2","vm","gce"].includes(f.deployTarget);
+  const isECS=["ecs","aca","cloud_run"].includes(f.deployTarget);
   const iacDir={terraform:"terraform",terragrunt:"terragrunt",cloudformation:"cloudformation",bicep:"bicep",arm:"arm",pulumi:"pulumi"}[f.iacTool]||"terraform";
   const registry=f.cloud==="aws"?"ECR":f.cloud==="azure"?"ACR":"GCR";
   const deployStep=
@@ -734,45 +735,20 @@ Add a comment block at the top of outputs.tf:
   # To add RDS read replica: set source = module.database.db_instance_id
   # To add ElastiCache: use private_subnet_ids + security_group_ids["cache"] from this stack's outputs
 
-GENERATED FILES:
-- terraform/Makefile (init/validate/plan/apply/destroy + output targets: make show-outputs, make db-endpoint)
-- terraform/scripts/validate.sh (fmt-check + validate + tflint)
-- terraform/backend.tf (S3 + DynamoDB remote state with workspace support)
-- terraform/main.tf (calls ALL modules with EXACT output→variable wiring as above)
-- terraform/variables.tf (app_name, env, region, dr_region)
-- terraform/outputs.tf (complete reference sheet as above)
-- terraform/modules/networking/main.tf + variables.tf + outputs.tf
-- terraform/modules/compute/main.tf + variables.tf + outputs.tf${f.deployTarget==="ec2"?" + user_data.sh.tpl":""}
-- terraform/modules/database/main.tf + variables.tf + outputs.tf (writes to SSM Parameter Store)
-- terraform/modules/storage/main.tf + variables.tf + outputs.tf
-- terraform/modules/iam/main.tf + variables.tf + outputs.tf
-- terraform/modules/security/main.tf + variables.tf + outputs.tf (KMS, WAF, GuardDuty if selected)
-- terraform/smoke-tests/smoke_test.sh (curl each named ALB/endpoint using terraform output -raw alb_dns_name)
+REQUIRED FILES (generate all):
+- terraform/Makefile + terraform/scripts/validate.sh + terraform/backend.tf
+- terraform/main.tf (ALL modules wired) + terraform/variables.tf + terraform/outputs.tf
+- terraform/modules/networking/ + compute/ + database/ + storage/ + iam/ + security/
+- terraform/smoke-tests/smoke_test.sh
 `:f.iacTool==="cloudformation"?`
-CloudFormation cross-stack references:
-  - networking stack exports: VpcId, PrivateSubnet1, PrivateSubnet2, DBSecurityGroup, ComputeSecurityGroup
-  - database stack imports via !ImportValue and exports: DBEndpoint, DBSecretArn
-  - compute stack imports VpcId, SubnetsIds, DBEndpoint from above stacks
-  Outputs section in each template exports all key values for cross-stack reference.
-Files: cloudformation/templates/(network,compute,database,storage,iam,monitoring).yaml
-  master.yaml (nested stack with DependsOn ordering)
-  parameters/dev.json + prod.json
+CloudFormation nested stacks: networking → database → compute, using !ImportValue for cross-stack refs.
+Files: cloudformation/master.yaml + templates/(network,compute,database,storage,iam).yaml + parameters/dev.json + prod.json
 `:f.iacTool==="bicep"?`
-Bicep module output chaining:
-  - networking.bicep outputs: vnetId, privateSubnetIds, publicSubnetIds, nsgIds
-  - database.bicep receives vnetId + subnetId, outputs: serverFqdn, connectionStringSecretUri
-  - compute.bicep receives vnetId, subnetIds, dbConnectionSecret, outputs: appFqdn, managedIdentityId
-  main.bicep wires all modules with explicit output→param passing.
-Files: bicep/main.bicep, bicep/modules/(networking,compute,database,storage,keyvault,identity).bicep
-  bicep/parameters/dev.bicepparam + prod.bicepparam
+Bicep modules: main.bicep calls networking.bicep → database.bicep → compute.bicep with explicit output→param passing.
+Files: bicep/main.bicep + modules/(networking,compute,database,storage,keyvault,identity).bicep + parameters/dev.bicepparam + prod.bicepparam
 `:f.iacTool==="pulumi"?`
-Pulumi stack references:
-  - Create base stack (networking) first, export vpc.id, subnet ids
-  - Database stack: const baseStack = new pulumi.StackReference("base"); const vpcId = baseStack.getOutput("vpcId")
-  - Compute stack references both networking and database stack outputs
-  index.ts wires all resources with proper Output<T> chaining.
-Files: pulumi/index.ts, pulumi/networking.ts, pulumi/database.ts, pulumi/compute.ts
-  Pulumi.dev.yaml + Pulumi.prod.yaml
+Pulumi StackReferences: base stack exports vpc/subnets, database+compute stacks import via getOutput().
+Files: pulumi/index.ts + networking.ts + database.ts + compute.ts + Pulumi.dev.yaml + Pulumi.prod.yaml
 `:""}
 
 All resources named exactly as specified. Detailed inline comments explaining every cross-module reference. Syntactically valid.`
@@ -849,6 +825,16 @@ ${f.microservices.map(s=>`- k8s/deployment-${s.name}.yaml`).join("\n")}
 - k8s/hpa-frontend.yaml + hpa-backend.yaml
 - k8s/configmap.yaml + secret.yaml + poddisruptionbudget-frontend.yaml + poddisruptionbudget-backend.yaml
 - k8s/smoke-tests/smoke_test.sh`}
+${isECS?`ECS / Serverless container deployment files (prefix "# File: ecs/"):
+- ecs/task-definition-frontend.json (ECS task def: container name, image placeholder, cpu/memory, portMappings, logConfiguration to CloudWatch, secrets from SSM/SecretsManager, healthCheck)
+- ecs/task-definition-backend.json (backend task def with DB env vars, secrets block referencing secret ARNs, ulimits)
+${f.microservices.map(s=>`- ecs/task-definition-${s.name}.json`).join("\n")}
+- ecs/service-frontend.json (ECS service: desiredCount, loadBalancers with targetGroupArn, deploymentConfiguration, serviceRegistries)
+- ecs/service-backend.json (backend service config)
+- ecs/register-tasks.sh (aws ecs register-task-definition for each task def JSON)
+- ecs/deploy.sh (aws ecs update-service --force-new-deployment for each service, waits for stability)
+- ecs/docker-compose.yml (local dev that mirrors ECS task structure)
+- ecs/smoke-tests/smoke_test.sh (curl ALB endpoints, PASS/FAIL per check)`}
 Inline comments throughout.`
     },
 
@@ -889,14 +875,9 @@ ${(f.configPresets||[]).filter(p=>["certbot","fail2ban","ufw","iptables","ssh_ha
 ${(f.configPresets||[]).filter(p=>["celery","sidekiq","kafka_svc","resque"].includes(p)).length?"\n- ansible/playbooks/message-queues.yml":""}
 ${(f.configPresets||[]).filter(p=>["keepalived","wireguard","openvpn","bind9","postfix"].includes(p)).length?"\n- ansible/playbooks/networking.yml":""}
 ${(f.configPresets||[]).filter(p=>["pgbouncer","nginx_cache","bbr","hugepages"].includes(p)).length?"\n- ansible/playbooks/performance.yml":""}
-For EACH software preset (${(f.configPresets||[]).join(", ")||"common"}), generate a full Ansible role:
-- ansible/roles/<name>/tasks/main.yml (install + configure + verify)
-- ansible/roles/<name>/handlers/main.yml (restart service on config change)
-- ansible/roles/<name>/defaults/main.yml (all configurable variables with defaults)
-- ansible/roles/<name>/templates/<name>.conf.j2 (Jinja2 config template)
-- ansible/roles/<name>/files/<name>-init.sh (if needed)
-- ansible/roles/<name>/meta/main.yml (dependencies)
-Each role: idempotent, supports --check mode, handles both Debian/RHEL, uses systemd.`:
+For EACH preset in [${(f.configPresets||[]).join(", ")||"common"}], generate a complete Ansible role under ansible/roles/<name>/:
+tasks/main.yml (idempotent install+config+verify) + handlers/main.yml + defaults/main.yml + templates/<name>.conf.j2 (Jinja2) + meta/main.yml
+Each role: idempotent, --check mode compatible, Debian+RHEL, systemd.`:
 f.configTool==="puppet"?`Files prefixed "# File: puppet/":
 - puppet/Puppetfile (Forge modules for: ${(f.configPresets||[]).join(", ")||"common"})
 - puppet/hiera.yaml (hierarchy: nodes → environment → common)
@@ -1800,7 +1781,7 @@ export default function App(){
       const sKey=`${key}:${tab.id}`;
       const cs=await cacheGet(sKey);
       if(cs){results[tab.id]=cs;newCached[tab.id]=true;setOutputs({...results});if(i===0){const f=parseFiles(cs);if(f.length)setSelectedFile(f[0]);}continue;}
-      try{const p=prompts[tab.id];const text=await callClaude(p.system,p.user);results[tab.id]=text;newCached[tab.id]=false;await cacheSet(sKey,text);setOutputs({...results});if(i===0){const f=parseFiles(text);if(f.length)setSelectedFile(f[0]);}}
+      try{const p=prompts[tab.id];const text=await callClaude(p.system,p.user,tab.id);results[tab.id]=text;newCached[tab.id]=false;await cacheSet(sKey,text);setOutputs({...results});if(i===0){const f=parseFiles(text);if(f.length)setSelectedFile(f[0]);}}
       catch(e){results[tab.id]=`❌ Failed: ${e.message}`;newCached[tab.id]=false;setOutputs({...results});}
     }
     await cacheSet(key,results);setCachedSections(newCached);setStep(4);setLoading(false);setProgressIdx(-1);
@@ -1808,7 +1789,7 @@ export default function App(){
 
   const retrySection=async tabId=>{
     setLoading(true);setError("");
-    try{const p=makePrompts(form)[tabId];const text=await callClaude(p.system,p.user);const updated={...outputs,[tabId]:text};setOutputs(updated);setCachedSections(s=>({...s,[tabId]:false}));await cacheSet(`${ck(form)}:${tabId}`,text);await cacheSet(ck(form),updated);}
+    try{const p=makePrompts(form)[tabId];const text=await callClaude(p.system,p.user,tabId);const updated={...outputs,[tabId]:text};setOutputs(updated);setCachedSections(s=>({...s,[tabId]:false}));await cacheSet(`${ck(form)}:${tabId}`,text);await cacheSet(ck(form),updated);}
     catch(e){setError(`Retry failed: ${e.message}`);}
     setLoading(false);
   };
@@ -2089,11 +2070,32 @@ export default function App(){
 │   ├── frontend/    ← ${PN[form.pipeline]}
 │   ├── backend/     ← ${PN[form.pipeline]} (+ DB migration)
 │   └── smoke-tests/ ← health_check.sh per endpoint
-├── ${["eks","aks","gke"].includes(form.deployTarget)?"helm/app/templates/ (18+ files) + helmfile.yaml":"k8s/ (namespace, deployments, services, ingress, hpa, pdb)"}
+├── ${["eks","aks","gke"].includes(form.deployTarget)?"helm/app/templates/ (18+ files) + helmfile.yaml":["ec2","vm","gce"].includes(form.deployTarget)?"app/scripts/ + systemd/ + nginx/ + docker-compose.prod.yml":["ecs","aca","cloud_run"].includes(form.deployTarget)?"ecs/ (task-definition.json, service.json, deploy.sh)":"k8s/ (namespace, deployments, services, ingress, hpa, pdb)"}
 ├── Dockerfile.frontend + Dockerfile.backend + docker-compose.yml${form.microservices.length?"\n├── "+form.microservices.map(s=>`Dockerfile.${s.name}`).join(" + "):""}
 ├── security/(iam-policy, cis-checklist, secrets-setup, kms...)
 ${form.configTool?`├── ${form.configTool}/ ← ${form.configPresets.length} role(s): ${form.configPresets.slice(0,4).join(", ")}${form.configPresets.length>4?"...":""}`:""}
 └── docs/runbook.md`}</pre>
+        </div>
+
+        {/* Expected output preview */}
+        <div style={{background:"#0a1628",border:"1px solid #22c55e",borderRadius:12,padding:16,marginBottom:12}}>
+          <div style={{fontSize:10,color:"#22c55e",letterSpacing:2,fontFamily:"JetBrains Mono",marginBottom:10}}>📋 EXPECTED OUTPUT FILES</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8}}>
+            {[
+              {label:"IaC ("+form.iacTool+")", files:"8–12 files (modules, Makefile, outputs.tf)", always:true},
+              {label:"CI/CD Pipeline", files:"3–4 files (frontend + backend + smoke tests)", always:true},
+              {label:["eks","aks","gke"].includes(form.deployTarget)?"Helm Chart":["ec2","vm","gce"].includes(form.deployTarget)?"EC2 Config":["ecs","aca","cloud_run"].includes(form.deployTarget)?"ECS Task Defs":"K8s Manifests",
+               files:["eks","aks","gke"].includes(form.deployTarget)?"18+ files":["ec2","vm","gce"].includes(form.deployTarget)?"6–8 files":["ecs","aca","cloud_run"].includes(form.deployTarget)?"5–7 files":"8–10 files", always:true},
+              {label:"Security Baseline", files:"6–8 files (IAM, CIS, hardening)", always:true},
+              {label:"Secrets & Env", files:"8–10 files (Vault, ExternalSecrets, rotation)", always:true},
+              {label:"Observability", files:"10–14 files (Prometheus, Grafana, Loki, OTel)", always:true},
+              {label:"Config Mgmt ("+(form.configTool||"none")+")", files:form.configTool?`${form.configPresets.length} roles + playbooks`:"skipped (no tool selected)", always:!!form.configTool},
+              {label:"SRE Runbook", files:"1 file (runbook.md)", always:true},
+            ].map(e=><div key={e.label} style={{background:"#060d1a",border:`1px solid ${e.always?"#1e3a5f":"#0f2944"}`,borderRadius:7,padding:"8px 11px",opacity:e.always?1:.5}}>
+              <div style={{fontSize:11,fontWeight:600,color:e.always?"#e2e8f0":"#475569",fontFamily:"JetBrains Mono",marginBottom:3}}>{e.label}</div>
+              <div style={{fontSize:10,color:"#475569",fontFamily:"JetBrains Mono"}}>{e.files}</div>
+            </div>)}
+          </div>
         </div>
 
         {/* Named resources */}
