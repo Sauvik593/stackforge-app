@@ -42,6 +42,7 @@ const CLOUDS=[
 const PIPELINES=[
   {id:"github",       label:"GitHub Actions",     icon:"⚙️"},
   {id:"gitlab",       label:"GitLab CI",           icon:"🦊"},
+  {id:"azure_devops", label:"Azure Pipelines",     icon:"🔷"},
   {id:"jenkins",      label:"Jenkins",             icon:"🎩"},
   {id:"codepipeline", label:"AWS CodePipeline",    icon:"🚀"},
   {id:"bitbucket",    label:"Bitbucket Pipelines", icon:"🪣"},
@@ -55,9 +56,21 @@ const IAC_TOOLS=[
   {id:"pulumi",         label:"Pulumi",         sub:"multi-cloud",       onlyCloud:null},
 ];
 const DEPLOY_TARGETS={
-  aws:  [{id:"ecs",label:"ECS (Fargate)",icon:"🐳"},{id:"eks",label:"EKS + Helm",icon:"⎈"}],
-  azure:[{id:"aca",label:"Container Apps",icon:"📦"},{id:"aks",label:"AKS + Helm",icon:"⎈"}],
-  gcp:  [{id:"cloud_run",label:"Cloud Run",icon:"🏃"},{id:"gke",label:"GKE + Helm",icon:"⎈"}],
+  aws:  [
+    {id:"ec2",      label:"EC2 (Auto Scaling)", icon:"🖥️", note:"AMI + Launch Template + ALB"},
+    {id:"ecs",      label:"ECS (Fargate)",       icon:"🐳", note:"Serverless containers"},
+    {id:"eks",      label:"EKS + Helm",          icon:"⎈",  note:"Managed Kubernetes"},
+  ],
+  azure:[
+    {id:"vm",       label:"VM Scale Set",        icon:"🖥️", note:"VMSS + Load Balancer"},
+    {id:"aca",      label:"Container Apps",      icon:"📦", note:"Serverless containers"},
+    {id:"aks",      label:"AKS + Helm",          icon:"⎈",  note:"Managed Kubernetes"},
+  ],
+  gcp:  [
+    {id:"gce",      label:"Compute Engine MIG",  icon:"🖥️", note:"MIG + HTTP LB"},
+    {id:"cloud_run",label:"Cloud Run",           icon:"🏃", note:"Serverless containers"},
+    {id:"gke",      label:"GKE + Helm",          icon:"⎈",  note:"Managed Kubernetes"},
+  ],
 };
 const TABS=[
   {id:"iac",        label:"IaC",         icon:"🏗️"},
@@ -494,7 +507,7 @@ const cacheSet=async(key,val)=>{try{await window.storage.set(key,JSON.stringify(
 
 // ─── Prompt helpers ───────────────────────────────────────────────────────
 const CN={aws:"AWS",azure:"Azure",gcp:"GCP"};
-const PN={github:"GitHub Actions",gitlab:"GitLab CI",jenkins:"Jenkins",codepipeline:"AWS CodePipeline",bitbucket:"Bitbucket Pipelines"};
+const PN={github:"GitHub Actions",gitlab:"GitLab CI",azure_devops:"Azure Pipelines",jenkins:"Jenkins",codepipeline:"AWS CodePipeline",bitbucket:"Bitbucket Pipelines"};
 const SYS="You are a senior DevOps architect. Output ONLY file contents. Each file MUST start with '# File: path/filename.ext' on its own line, then a code block. No prose outside code blocks. Use the EXACT resource names provided. Ensure all code is syntactically valid.";
 
 const resSummary=rs=>rs.length?rs.map(r=>`- ${r.label} (${r.count}x): ${r.names.join(", ")}`).join("\n"):"No specific resources — use sensible defaults.";
@@ -502,73 +515,212 @@ const svcSummary=ss=>ss.length?ss.map(s=>`- ${s.name} (port ${s.port})`).join("\
 
 const makePrompts=f=>{
   const isHelm=["eks","aks","gke"].includes(f.deployTarget);
+  const isEC2Like=["ec2","vm","gce"].includes(f.deployTarget);
   const iacDir={terraform:"terraform",terragrunt:"terragrunt",cloudformation:"cloudformation",bicep:"bicep",arm:"arm",pulumi:"pulumi"}[f.iacTool]||"terraform";
   const registry=f.cloud==="aws"?"ECR":f.cloud==="azure"?"ACR":"GCR";
-  const deployStep=isHelm?"helm upgrade --install --atomic --wait --set image.tag=$IMAGE_TAG with per-env values files":f.cloud==="aws"?"ECS rolling update (aws ecs update-service --force-new-deployment)":f.cloud==="azure"?"Azure Container Apps update":"Cloud Run deploy";
+  const deployStep=
+  f.deployTarget==="ec2"?"rolling EC2 deploy: (1) build AMI with Packer OR push artifact to S3, (2) update Launch Template with new AMI/version, (3) trigger Instance Refresh on ASG with min-healthy=90%, (4) wait for refresh, (5) run smoke tests against ALB DNS":
+  f.deployTarget==="vm"?"Azure VMSS rolling update: az vmss update-instances + rolling upgrade policy":
+  f.deployTarget==="gce"?"GCE MIG rolling update: gcloud compute instance-groups managed rolling-action start-update":
+  isHelm?"helm upgrade --install --atomic --wait --set image.tag=$IMAGE_TAG with per-env values files":
+  f.cloud==="aws"?"ECS rolling update (aws ecs update-service --force-new-deployment)":
+  f.cloud==="azure"?"Azure Container Apps update (az containerapp update --image)":
+  "Cloud Run deploy (gcloud run deploy --image)";
   const RS=resSummary(f.resources);
   const SS=svcSummary(f.microservices);
+  const EI=f.existingInfra?.enabled?`
+EXISTING INFRASTRUCTURE (import these values — DO NOT recreate these resources):
+  vpc_id: "${f.existingInfra.vpcId||"<paste vpc-id from terraform output vpc_id>"}"
+  private_subnet_ids: [${f.existingInfra.privateSubnets||"<paste from terraform output private_subnet_ids>"}]
+  public_subnet_ids:  [${f.existingInfra.publicSubnets||"<paste from terraform output public_subnet_ids>"}]
+  ${f.existingInfra.dbEndpoint?`db_endpoint: "${f.existingInfra.dbEndpoint}" (use data source, do NOT create new DB)`:""}
+  ${f.existingInfra.dbSecretArn?`db_secret_arn: "${f.existingInfra.dbSecretArn}" (reference existing secret)`:""}
+  ${f.existingInfra.additionalOutputs||""}
+Use data sources to reference existing resources:
+  data "aws_vpc" "existing" { id = "${f.existingInfra.vpcId||"var.existing_vpc_id"}" }
+  data "aws_subnets" "private" { filter { name="vpc-id" values=[local.vpc_id] } filter { name="tag:Tier" values=["private"] } }
+  data "aws_secretsmanager_secret_version" "db" { secret_id = local.db_secret_arn }
+Generate ONLY the NEW modules requested. Reference existing resources via data sources.
+`:"";
 
   return {
     iac:{system:SYS,user:
 `Generate complete production-ready ${f.iacTool} infrastructure for: ${f.appDescription||"web application"} on ${CN[f.cloud]}.
-Extras: ${f.extras.join(", ")||"none"}
+Deploy target: ${f.deployTarget||"default"}. Extras: ${f.extras.join(", ")||"none"}.
+Region: ${f.region||"us-east-1"}${f.drRegion?`. DR region: ${f.drRegion}`:""}
+${f.compliance?`Compliance: ${f.compliance.toUpperCase()}`:""}
 
-EXACT NAMED RESOURCES (use these exact names in every resource identifier, tag, and reference):
+${EI}EXACT NAMED RESOURCES (use these exact names as Terraform resource identifiers, tags, and all cross-module references):
 ${RS}
 
 MICROSERVICES: ${SS}
 
-ALL files must be prefixed "# File: ${iacDir}/".
+═══════════════════════════════════════════════════════════════════
+CRITICAL: PROPER MODULE OUTPUT CHAINING
+Every module MUST export outputs. Root main.tf MUST wire modules together using those outputs.
+NO hardcoded IDs anywhere — all cross-references must use module.X.output_name syntax.
+═══════════════════════════════════════════════════════════════════
 
-${f.iacTool==="terraform"?`Files:
-- terraform/Makefile (targets: init, validate, plan, apply, destroy — always run 'terraform validate' before plan)
-- terraform/scripts/validate.sh (#!/bin/bash: terraform fmt -check, terraform validate, tflint if available — exit 1 on failure)
-- terraform/backend.tf (S3/GCS remote state + locking)
-- terraform/main.tf (calls all modules, wires named resources)
-- terraform/variables.tf + outputs.tf + terraform.tfvars
-- terraform/modules/networking/main.tf (VPC, subnets IGW, NAT gateways ${f.resources.filter(r=>r.serviceId==="nat_gateway").map(r=>r.names.join(", ")).join("")}, route tables, SGs)
-- terraform/modules/networking/variables.tf + outputs.tf
-- terraform/modules/compute/main.tf (${f.resources.filter(r=>["eks_cluster","ecs_cluster","ec2_asg","fargate"].includes(r.serviceId)).map(r=>r.names.join(", ")).join(", ")||"compute"}, ALBs ${f.resources.filter(r=>r.serviceId==="alb").map(r=>r.names.join(", ")).join("")})
-- terraform/modules/compute/variables.tf + outputs.tf
-- terraform/modules/database/main.tf (${f.resources.filter(r=>r.serviceId.startsWith("rds")||r.serviceId.startsWith("aurora")||r.serviceId==="dynamodb").map(r=>r.names.join(", ")).join(", ")||"databases"})
-- terraform/modules/database/variables.tf + outputs.tf
-- terraform/modules/storage/main.tf (${f.resources.filter(r=>["s3","efs","ebs"].includes(r.serviceId)).map(r=>r.names.join(", ")).join(", ")||"storage"})
-- terraform/modules/storage/variables.tf + outputs.tf
-- terraform/modules/iam/main.tf (roles per named service)
-- terraform/modules/iam/variables.tf + outputs.tf
-${f.resources.filter(r=>["sqs","sns","eventbridge","kinesis_str","msk"].includes(r.serviceId)).length?`- terraform/modules/messaging/main.tf + variables.tf + outputs.tf`:``}
-${f.resources.filter(r=>["kms","secrets_mgr","waf"].includes(r.serviceId)).length?`- terraform/modules/security/main.tf + variables.tf + outputs.tf`:``}
-- terraform/smoke-tests/smoke_test.sh (curl each named ALB/endpoint, PASS/FAIL per resource, exit 1 on any failure)
-All Terraform must be syntactically valid HCL. Run terraform validate as first step in Makefile.`:
-f.iacTool==="terragrunt"?`Files:
-- terragrunt/Makefile (validate, plan-all, apply-all targets)
-- terragrunt/terragrunt.hcl + common.hcl
-- terragrunt/modules/(networking,compute,database,storage,iam)/main.tf + variables.tf + outputs.tf
-- terragrunt/live/dev/(networking,compute,database)/terragrunt.hcl
-- terragrunt/live/prod/(networking,compute,database)/terragrunt.hcl
-- terragrunt/smoke-tests/smoke_test.sh`:
-f.iacTool==="cloudformation"?`Files:
-- cloudformation/Makefile (validate, deploy, delete targets using aws cloudformation validate-template)
-- cloudformation/master.yaml + parameters/dev.json + prod.json
-- cloudformation/templates/(network,compute,database,storage,iam,monitoring).yaml
-- cloudformation/smoke-tests/smoke_test.sh`:
-f.iacTool==="bicep"?`Files:
-- bicep/Makefile (validate: az bicep build + az deployment what-if)
-- bicep/main.bicep + parameters/dev.bicepparam + prod.bicepparam
-- bicep/modules/(network,compute,database,storage,keyvault,identity).bicep
-- bicep/smoke-tests/smoke_test.sh`:
-f.iacTool==="arm"?`Files:
-- arm/Makefile (validate: az deployment group validate)
-- arm/azuredeploy.json + azuredeploy.parameters.dev.json + prod.json
-- arm/linked-templates/(network,compute,database,storage,keyvault,monitoring).json
-- arm/smoke-tests/smoke_test.sh`:
-`Files:
-- pulumi/index.ts + Pulumi.yaml + Pulumi.dev.yaml + Pulumi.prod.yaml + package.json
-- pulumi/smoke-tests/smoke_test.sh`}
+${f.iacTool==="terraform"||f.iacTool==="terragrunt"?`
+REQUIRED OUTPUT → INPUT CHAIN (implement ALL of these):
 
-smoke_test.sh: curl each named resource endpoint, print [PASS] or [FAIL] per check, exit 1 if any fail.
-Add detailed inline comments throughout. Ensure syntactic validity.`
-    },
+networking module outputs → used by EVERY other module:
+  - vpc_id, private_subnet_ids[], public_subnet_ids[]
+  - nat_gateway_ids[], security_group_ids{alb,compute,db,cache,bastion}
+  - availability_zones[]
+
+compute module receives from networking:
+  - var.vpc_id = module.networking.vpc_id
+  - var.private_subnet_ids = module.networking.private_subnet_ids
+  - var.alb_security_group_id = module.networking.security_group_ids["alb"]
+
+${f.deployTarget==="ec2"?`
+EC2-SPECIFIC CHAIN:
+compute module outputs (for EC2 deploy):
+  - instance_ids[], private_ips[], public_ips[] per named instance group
+  - alb_dns_name, alb_arn, alb_zone_id (for DNS/Route53)
+  - autoscaling_group_names{} per named ASG
+  - launch_template_ids{}
+  - target_group_arns{} — one per named service/port
+
+ALB target group registration:
+  - aws_lb_target_group named per service (e.g. "api-tg", "frontend-tg")
+  - aws_lb_target_group_attachment uses module.compute.instance_ids
+  - ALB listener rules route /api/* → api-tg, /* → frontend-tg
+
+EC2 user_data bootstrap script (base64 encoded in launch template):
+  - Pulls DB_HOST from SSM: aws ssm get-parameter --name /app/db_host
+  - Pulls DB_PASSWORD from Secrets Manager by name: ${f.resources.filter(r=>r.serviceId==="secrets_mgr").map(r=>r.names[0]).join(", ")||"app-secrets"}
+  - Exports env vars and starts application
+  - Registers with ALB target group on startup
+
+Files:
+- terraform/modules/compute/main.tf (Launch Template + ASG per named group + ALB + Target Groups + Listener Rules)
+- terraform/modules/compute/user_data.sh.tpl (bootstrap: install deps, fetch secrets from SSM/SecretsManager, start app)
+- terraform/modules/compute/variables.tf (receives vpc_id, subnet_ids, sg_ids, db_host, db_port, secret_arns from other modules)
+- terraform/modules/compute/outputs.tf (exports instance_ids, private_ips, alb_dns_name, target_group_arns)
+`:f.deployTarget==="ecs"?`
+ECS-SPECIFIC CHAIN:
+compute module outputs (for ECS):
+  - ecs_cluster_arns{} per named cluster
+  - task_definition_arns{} per service
+  - service_arns{} per named service
+  - alb_dns_name, alb_arn — used by DNS module
+  - ecr_repository_urls{} — consumed by pipeline
+
+ECS task definition receives DB details via secrets:
+  - secrets block references module.database.secret_arn
+  - environment: DB_HOST = module.database.endpoint
+  - environment: DB_PORT = module.database.port
+`:f.deployTarget==="eks"?`
+EKS-SPECIFIC CHAIN:
+compute module outputs (for EKS):
+  - cluster_endpoint, cluster_name, cluster_certificate_authority_data
+  - node_group_arns{}, oidc_provider_arn (for IRSA)
+  - kubeconfig_command (aws eks update-kubeconfig ...)
+
+ExternalSecrets operator uses:
+  - module.iam.external_secrets_role_arn (IRSA)
+  - module.database.secret_name → SecretStore → ExternalSecret CR
+`:""}
+
+database module receives from networking, outputs to compute/secrets:
+  - var.vpc_id = module.networking.vpc_id
+  - var.subnet_ids = module.networking.private_subnet_ids
+  - var.security_group_id = module.networking.security_group_ids["db"]
+  Outputs:
+  - endpoint (hostname only, no port) → stored in SSM + Secrets Manager
+  - port, database_name, username
+  - secret_arn (Secrets Manager ARN containing full connection string)
+  - replica_endpoints[] (if multi-AZ)
+  Parameter store writes (in locals or null_resource):
+    - /\${var.app_name}/\${var.env}/db/host = aws_db_instance.this.address
+    - /\${var.app_name}/\${var.env}/db/port = aws_db_instance.this.port
+
+storage module receives from networking:
+  - var.vpc_id for VPC endpoint policies
+  Outputs:
+  - bucket_arns{} per named bucket — used by IAM module for policies
+  - bucket_names{} per named bucket
+
+iam module receives outputs from ALL other modules:
+  - var.bucket_arns = module.storage.bucket_arns
+  - var.cluster_oidc = module.compute.oidc_provider_arn (EKS only)
+  - var.secret_arns = module.database.secret_arn
+  Outputs:
+  - role_arns{} per service — used in task definitions / K8s ServiceAccounts
+
+ROOT main.tf MUST follow this exact dependency order:
+  module "networking" { ... }
+  module "storage"    { depends_on = [module.networking]; vpc_id = module.networking.vpc_id }
+  module "database"   { depends_on = [module.networking]; vpc_id = module.networking.vpc_id; subnet_ids = module.networking.private_subnet_ids; security_group_id = module.networking.security_group_ids["db"] }
+  module "iam"        { depends_on = [module.storage, module.database]; bucket_arns = module.storage.bucket_arns; secret_arns = module.database.secret_arn }
+  module "compute"    { depends_on = [module.networking, module.database, module.iam]; vpc_id = module.networking.vpc_id; subnet_ids = module.networking.private_subnet_ids; db_host = module.database.endpoint; db_secret_arn = module.database.secret_arn; instance_role_arn = module.iam.role_arns["app"] }
+
+ROOT outputs.tf MUST export a complete reference sheet:
+  # Infrastructure reference outputs — use these to extend this stack later
+  output "vpc_id"              { value = module.networking.vpc_id }
+  output "private_subnet_ids"  { value = module.networking.private_subnet_ids }
+  output "public_subnet_ids"   { value = module.networking.public_subnet_ids }
+  output "security_groups"     { value = module.networking.security_group_ids }
+  output "db_endpoint"         { value = module.database.endpoint; sensitive = true }
+  output "db_secret_arn"       { value = module.database.secret_arn }
+  output "bucket_arns"         { value = module.storage.bucket_arns }
+  output "iam_role_arns"       { value = module.iam.role_arns }
+  ${f.deployTarget==="ec2"?"output "alb_dns_name"  { value = module.compute.alb_dns_name }":f.deployTarget==="eks"?"output "cluster_name" { value = module.compute.cluster_name }
+  output "cluster_endpoint" { value = module.compute.cluster_endpoint }":"output "service_arns" { value = module.compute.service_arns }"}
+
+EXTENDING THIS STACK (future additions):
+Add a comment block at the top of outputs.tf:
+  # To add API Gateway referencing this VPC:
+  #   data "terraform_remote_state" "base" { backend = "s3"; config = { bucket = "...", key = "terraform.tfstate" } }
+  #   resource "aws_api_gateway_vpc_link" { target_arns = [data.terraform_remote_state.base.outputs.alb_arn] }
+  # To add RDS read replica: set source = module.database.db_instance_id
+  # To add ElastiCache: use private_subnet_ids + security_group_ids["cache"] from this stack's outputs
+
+GENERATED FILES:
+- terraform/Makefile (init/validate/plan/apply/destroy + output targets: make show-outputs, make db-endpoint)
+- terraform/scripts/validate.sh (fmt-check + validate + tflint)
+- terraform/backend.tf (S3 + DynamoDB remote state with workspace support)
+- terraform/main.tf (calls ALL modules with EXACT output→variable wiring as above)
+- terraform/variables.tf (app_name, env, region, dr_region)
+- terraform/outputs.tf (complete reference sheet as above)
+- terraform/modules/networking/main.tf + variables.tf + outputs.tf
+- terraform/modules/compute/main.tf + variables.tf + outputs.tf${f.deployTarget==="ec2"?" + user_data.sh.tpl":""}
+- terraform/modules/database/main.tf + variables.tf + outputs.tf (writes to SSM Parameter Store)
+- terraform/modules/storage/main.tf + variables.tf + outputs.tf
+- terraform/modules/iam/main.tf + variables.tf + outputs.tf
+- terraform/modules/security/main.tf + variables.tf + outputs.tf (KMS, WAF, GuardDuty if selected)
+- terraform/smoke-tests/smoke_test.sh (curl each named ALB/endpoint using terraform output -raw alb_dns_name)
+`:f.iacTool==="cloudformation"?`
+CloudFormation cross-stack references:
+  - networking stack exports: VpcId, PrivateSubnet1, PrivateSubnet2, DBSecurityGroup, ComputeSecurityGroup
+  - database stack imports via !ImportValue and exports: DBEndpoint, DBSecretArn
+  - compute stack imports VpcId, SubnetsIds, DBEndpoint from above stacks
+  Outputs section in each template exports all key values for cross-stack reference.
+Files: cloudformation/templates/(network,compute,database,storage,iam,monitoring).yaml
+  master.yaml (nested stack with DependsOn ordering)
+  parameters/dev.json + prod.json
+`:f.iacTool==="bicep"?`
+Bicep module output chaining:
+  - networking.bicep outputs: vnetId, privateSubnetIds, publicSubnetIds, nsgIds
+  - database.bicep receives vnetId + subnetId, outputs: serverFqdn, connectionStringSecretUri
+  - compute.bicep receives vnetId, subnetIds, dbConnectionSecret, outputs: appFqdn, managedIdentityId
+  main.bicep wires all modules with explicit output→param passing.
+Files: bicep/main.bicep, bicep/modules/(networking,compute,database,storage,keyvault,identity).bicep
+  bicep/parameters/dev.bicepparam + prod.bicepparam
+`:f.iacTool==="pulumi"?`
+Pulumi stack references:
+  - Create base stack (networking) first, export vpc.id, subnet ids
+  - Database stack: const baseStack = new pulumi.StackReference("base"); const vpcId = baseStack.getOutput("vpcId")
+  - Compute stack references both networking and database stack outputs
+  index.ts wires all resources with proper Output<T> chaining.
+Files: pulumi/index.ts, pulumi/networking.ts, pulumi/database.ts, pulumi/compute.ts
+  Pulumi.dev.yaml + Pulumi.prod.yaml
+`:""}
+
+All resources named exactly as specified. Detailed inline comments explaining every cross-module reference. Syntactically valid.`
+    },,
 
     pipeline:{system:SYS,user:
 `Generate TWO ${PN[f.pipeline]} pipelines (frontend + backend) for: ${f.appDescription||"web application"} on ${CN[f.cloud]}.
@@ -581,6 +733,7 @@ Also: "# File: pipelines/smoke-tests/smoke_test.sh" and "# File: pipelines/smoke
 ${f.pipeline==="github"?`- pipelines/frontend/.github/workflows/frontend-deploy.yml
 - pipelines/backend/.github/workflows/backend-deploy.yml`:
 f.pipeline==="gitlab"?`- pipelines/frontend/.gitlab-ci-frontend.yml\n- pipelines/backend/.gitlab-ci-backend.yml`:
+f.pipeline==="azure_devops"?`- pipelines/frontend/azure-pipelines-frontend.yml (pool: ubuntu-latest, stages: build→test→scan→push→deploy)\n- pipelines/backend/azure-pipelines-backend.yml (+ DB migration task before deploy)\n- pipelines/azure-library-variables.md (variable group setup guide)`:
 f.pipeline==="jenkins"?`- pipelines/frontend/Jenkinsfile.frontend\n- pipelines/backend/Jenkinsfile.backend`:
 f.pipeline==="bitbucket"?`- pipelines/frontend/bitbucket-pipelines-frontend.yml\n- pipelines/backend/bitbucket-pipelines-backend.yml`:
 `- pipelines/frontend/buildspec-frontend.yml + codepipeline-frontend.json\n- pipelines/backend/buildspec-backend.yml + codepipeline-backend.json`}
@@ -605,7 +758,7 @@ Separate dev (auto on develop branch) vs prod (manual approval on main).`
 
     stack:{system:SYS,user:
 `Generate application stack for: ${f.appDescription||"web application"} on ${CN[f.cloud]}.
-Deploy: ${f.deployTarget||"container"} ${isHelm?"(Helm)":""}. Microservices: ${SS}
+Deploy: ${f.deployTarget||"container"} ${isHelm?"(Helm)":isEC2Like?"(EC2 + systemd/Docker Compose on instances)":""}. Microservices: ${SS}
 
 Required files:
 - Dockerfile.frontend (multi-stage: node build → nginx, non-root, HEALTHCHECK)
@@ -632,6 +785,14 @@ ${f.microservices.map(s=>`- k8s/deployment-${s.name}.yaml`).join("\n")}
 - k8s/hpa-frontend.yaml + hpa-backend.yaml
 - k8s/configmap.yaml + secret.yaml + poddisruptionbudget-frontend.yaml + poddisruptionbudget-backend.yaml
 - k8s/smoke-tests/smoke_test.sh`}
+${isEC2Like?`
+EC2/VM deployment files:
+- scripts/deploy.sh (pull artifact from S3/ECR, stop old service, start new, health check)
+- systemd/app.service (systemd unit file for each microservice — ExecStart, Restart=always, env file)
+- docker-compose.prod.yml (alternative: run all services via Docker Compose on EC2)
+- scripts/bootstrap.sh (user_data script: install Docker/Node/Python, fetch secrets from SSM, start services)
+- scripts/health_check.sh (curl /health on each service port, used by ALB target group health checks)
+- nginx/app.conf (nginx reverse proxy config: upstream blocks per named service, pass headers)`:""}`
 Inline comments throughout.`
     },
 
@@ -1478,8 +1639,56 @@ function DiffViewer({currentOutputs,onClose}){
   );
 }
 
+
+// ─── ExistingInfraPanel ──────────────────────────────────────────────────
+function ExistingInfraPanel({value,onChange}){
+  const on=value?.enabled;
+  const upd=(k,v)=>onChange({...value,[k]:v});
+  const fs={width:"100%",background:"#060d1a",border:"1px solid #1e3a5f",color:"#38bdf8",
+    borderRadius:6,padding:"7px 10px",fontFamily:"JetBrains Mono",fontSize:11,outline:"none",marginBottom:8};
+  return <div style={{background:"#0a1628",border:`1px solid ${on?"#0ea5e9":"#1e3a5f"}`,borderRadius:12,padding:16,marginBottom:12,transition:"border-color .2s"}}>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:on?14:0}}>
+      <div>
+        <div style={{fontSize:11,fontWeight:700,color:"#e2e8f0",fontFamily:"JetBrains Mono",marginBottom:3}}>🔗 EXTEND EXISTING INFRASTRUCTURE</div>
+        <div style={{fontSize:10,color:"#475569",fontFamily:"JetBrains Mono"}}>Have a previous stack? Paste outputs — new modules reference existing resources via data sources</div>
+      </div>
+      <div onClick={()=>onChange({...value,enabled:!on})} style={{width:38,height:20,background:on?"#0ea5e9":"#1e3a5f",borderRadius:10,cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0,marginLeft:12}}>
+        <div style={{width:16,height:16,background:"#fff",borderRadius:"50%",position:"absolute",top:2,left:on?20:2,transition:"left .2s"}}/>
+      </div>
+    </div>
+    {on&&<div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+        <div>
+          <div style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",letterSpacing:1,marginBottom:4}}>VPC ID <span style={{color:"#38bdf8"}}>(terraform output vpc_id)</span></div>
+          <input value={value.vpcId||""} onChange={e=>upd("vpcId",e.target.value)} placeholder="vpc-0abc123..." style={fs}/>
+        </div>
+        <div>
+          <div style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",letterSpacing:1,marginBottom:4}}>DB ENDPOINT <span style={{color:"#475569"}}>(skip if creating new DB)</span></div>
+          <input value={value.dbEndpoint||""} onChange={e=>upd("dbEndpoint",e.target.value)} placeholder="mydb.xxxx.rds.amazonaws.com" style={fs}/>
+        </div>
+      </div>
+      <div style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",letterSpacing:1,marginBottom:4}}>PRIVATE SUBNET IDs <span style={{color:"#38bdf8"}}>(terraform output private_subnet_ids — comma separated)</span></div>
+      <input value={value.privateSubnets||""} onChange={e=>upd("privateSubnets",e.target.value)} placeholder="subnet-aaa,subnet-bbb,subnet-ccc" style={fs}/>
+      <div style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",letterSpacing:1,marginBottom:4}}>PUBLIC SUBNET IDs</div>
+      <input value={value.publicSubnets||""} onChange={e=>upd("publicSubnets",e.target.value)} placeholder="subnet-xxx,subnet-yyy" style={fs}/>
+      <div style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",letterSpacing:1,marginBottom:4}}>DB SECRET ARN <span style={{color:"#475569"}}>(optional)</span></div>
+      <input value={value.dbSecretArn||""} onChange={e=>upd("dbSecretArn",e.target.value)} placeholder="arn:aws:secretsmanager:..." style={fs}/>
+      <div style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",letterSpacing:1,marginBottom:4}}>ADDITIONAL OUTPUTS <span style={{color:"#475569"}}>(key = value, one per line)</span></div>
+      <textarea value={value.additionalOutputs||""} onChange={e=>upd("additionalOutputs",e.target.value)} placeholder={"alb_arn = arn:aws:...
+iam_role_arns = {"app": "arn:aws:iam::..."}"} rows={3} style={{...fs,resize:"vertical"}}/>
+      <div style={{background:"#060d1a",border:"1px solid #0f2944",borderRadius:7,padding:"8px 12px",marginTop:4}}>
+        <div style={{fontSize:9,color:"#38bdf8",fontFamily:"JetBrains Mono",marginBottom:3}}>💡 GET YOUR OUTPUTS</div>
+        <div style={{fontSize:10,color:"#475569",fontFamily:"JetBrains Mono",lineHeight:1.7}}>
+          Run in your existing stack: <span style={{color:"#38bdf8"}}>terraform output -json</span> or <span style={{color:"#38bdf8"}}>terraform output vpc_id</span><br/>
+          New modules use <span style={{color:"#38bdf8"}}>data sources</span> to reference existing resources — nothing gets recreated.
+        </div>
+      </div>
+    </div>}
+  </div>;
+}
+
 // ─── App ──────────────────────────────────────────────────────────────────
-const INIT_FORM={appDescription:"",cloud:"",pipeline:"",iacTool:"terraform",deployTarget:"",region:"",drRegion:"",compliance:"",extras:[],resources:[],microservices:[],configTool:"",configPresets:[]};
+const INIT_FORM={appDescription:"",cloud:"",pipeline:"",iacTool:"terraform",deployTarget:"",region:"",drRegion:"",compliance:"",extras:[],resources:[],microservices:[],configTool:"",configPresets:[],existingInfra:{enabled:false,vpcId:"",privateSubnets:"",publicSubnets:"",dbEndpoint:"",dbSecretArn:"",additionalOutputs:""}};
 
 export default function App(){
   const [step,setStep]=useState(1);
@@ -1664,12 +1873,12 @@ export default function App(){
         {form.cloud&&<div style={{background:"#0a1628",border:"1px solid #1e3a5f",borderRadius:12,padding:16,marginBottom:12}}>
           <label style={{display:"block",fontSize:10,color:"#38bdf8",letterSpacing:2,fontFamily:"JetBrains Mono",marginBottom:9}}>DEPLOY TARGET</label>
           <div style={{display:"flex",gap:9,flexWrap:"wrap"}}>
-            {(DEPLOY_TARGETS[form.cloud]||[]).map(d=><div key={d.id} className="sel" onClick={()=>setForm(f=>({...f,deployTarget:d.id}))} style={{padding:"9px 14px",border:`1px solid ${form.deployTarget===d.id?"#38bdf8":"#1e3a5f"}`,borderRadius:9,background:form.deployTarget===d.id?"#0f2944":"transparent",minWidth:145}}>
+            {(DEPLOY_TARGETS[form.cloud]||[]).map(d=><div key={d.id} className="sel" onClick={()=>setForm(f=>({...f,deployTarget:d.id}))} style={{padding:"9px 14px",border:`1px solid ${form.deployTarget===d.id?"#38bdf8":"#1e3a5f"}`,borderRadius:9,background:form.deployTarget===d.id?"#0f2944":"transparent",minWidth:155}}>
               <div style={{display:"flex",alignItems:"center",gap:7}}>
                 <span style={{fontSize:16}}>{d.icon}</span>
                 <div>
                   <div style={{fontWeight:600,color:form.deployTarget===d.id?"#38bdf8":"#94a3b8",fontSize:12}}>{d.label}</div>
-                  {["eks","aks","gke"].includes(d.id)&&<div style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",marginTop:1}}>⎈ full Helm chart</div>}
+                  {d.note&&<div style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",marginTop:1}}>{d.note}</div>}
                 </div>
                 {form.deployTarget===d.id&&<span style={{marginLeft:"auto",color:"#38bdf8",fontSize:12}}>✓</span>}
               </div>
@@ -1718,6 +1927,12 @@ export default function App(){
           </div>
           {form.compliance&&<div style={{fontSize:10,color:"#475569",fontFamily:"JetBrains Mono",marginTop:8,lineHeight:1.6}}>{COMPLIANCE.find(cp=>cp.id===form.compliance)?.extra}</div>}
         </div>
+
+        {/* Existing infrastructure panel */}
+        <ExistingInfraPanel
+          value={form.existingInfra}
+          onChange={v=>setForm(f=>({...f,existingInfra:v}))}
+        />
 
         <div style={{textAlign:"center"}}>
           <button className="bp" disabled={!form.appDescription||!form.cloud||!form.pipeline} onClick={()=>setStep(2)} style={{fontSize:14,padding:"12px 40px"}}>Next: Resources & Config →</button>
