@@ -719,7 +719,7 @@ Files: pulumi/index.ts, pulumi/networking.ts, pulumi/database.ts, pulumi/compute
 `:""}
 
 All resources named exactly as specified. Detailed inline comments explaining every cross-module reference. Syntactically valid.`
-    },,
+    },
 
     pipeline:{system:SYS,user:
 `Generate TWO ${PN[f.pipeline]} pipelines (frontend + backend) for: ${f.appDescription||"web application"} on ${CN[f.cloud]}.
@@ -791,8 +791,7 @@ EC2/VM deployment files:
 - docker-compose.prod.yml (alternative: run all services via Docker Compose on EC2)
 - scripts/bootstrap.sh (user_data script: install Docker/Node/Python, fetch secrets from SSM, start services)
 - scripts/health_check.sh (curl /health on each service port, used by ALB target group health checks)
-- nginx/app.conf (nginx reverse proxy config: upstream blocks per named service, pass headers)`:""}`
-Inline comments throughout.`
+- nginx/app.conf (nginx reverse proxy config: upstream blocks per named service, pass headers)`:""}\nInline comments throughout.`
     },
 
     security:{system:SYS,user:
@@ -824,9 +823,9 @@ ${f.configTool==="ansible"||!f.configTool?`Files prefixed "# File: ansible/":
 - ansible/group_vars/dev.yml + prod.yml
 - ansible/playbooks/site.yml (master playbook: imports all role plays)
 - ansible/playbooks/bootstrap.yml (first-run: update OS, install base packages, set hostname, configure swap, NTP, users)
-${(f.configPresets||[]).filter(p=>["nginx","apache","haproxy","caddy"].includes(p)).length?`- ansible/playbooks/webserver.yml`:``}
-${(f.configPresets||[]).filter(p=>["mysql_svc","pg_svc","redis_svc","mongodb_s"].includes(p)).length?`- ansible/playbooks/database.yml`:``}
-${(f.configPresets||[]).filter(p=>["docker","compose"].includes(p)).length?`- ansible/playbooks/docker.yml`:``}
+${(f.configPresets||[]).filter(p=>["nginx","apache","haproxy","caddy"].includes(p)).length?"\n- ansible/playbooks/webserver.yml":""}
+${(f.configPresets||[]).filter(p=>["mysql_svc","pg_svc","redis_svc","mongodb_s"].includes(p)).length?"\n- ansible/playbooks/database.yml":""}
+${(f.configPresets||[]).filter(p=>["docker","compose"].includes(p)).length?"\n- ansible/playbooks/docker.yml":""}
 For EACH software preset (${(f.configPresets||[]).join(", ")||"common"}), generate a full Ansible role:
 - ansible/roles/<name>/tasks/main.yml (install + configure + verify)
 - ansible/roles/<name>/handlers/main.yml (restart service on config change)
@@ -1666,15 +1665,20 @@ function ExistingInfraPanel({value,onChange}){
           <input value={value.dbEndpoint||""} onChange={e=>upd("dbEndpoint",e.target.value)} placeholder="mydb.xxxx.rds.amazonaws.com" style={fs}/>
         </div>
       </div>
-      <div style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",letterSpacing:1,marginBottom:4}}>PRIVATE SUBNET IDs <span style={{color:"#38bdf8"}}>(terraform output private_subnet_ids — comma separated)</span></div>
+      <div style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",letterSpacing:1,marginBottom:4}}>PRIVATE SUBNET IDs <span style={{color:"#38bdf8"}}>(terraform output private_subnet_ids)</span></div>
       <input value={value.privateSubnets||""} onChange={e=>upd("privateSubnets",e.target.value)} placeholder="subnet-aaa,subnet-bbb,subnet-ccc" style={fs}/>
       <div style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",letterSpacing:1,marginBottom:4}}>PUBLIC SUBNET IDs</div>
       <input value={value.publicSubnets||""} onChange={e=>upd("publicSubnets",e.target.value)} placeholder="subnet-xxx,subnet-yyy" style={fs}/>
       <div style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",letterSpacing:1,marginBottom:4}}>DB SECRET ARN <span style={{color:"#475569"}}>(optional)</span></div>
-      <input value={value.dbSecretArn||""} onChange={e=>upd("dbSecretArn",e.target.value)} placeholder="arn:aws:secretsmanager:..." style={fs}/>
+      <input value={value.dbSecretArn||""} onChange={e=>upd("dbSecretArn",e.target.value)} placeholder="arn:aws:secretsmanager:us-east-1:123:secret:app" style={fs}/>
       <div style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",letterSpacing:1,marginBottom:4}}>ADDITIONAL OUTPUTS <span style={{color:"#475569"}}>(key = value, one per line)</span></div>
-      <textarea value={value.additionalOutputs||""} onChange={e=>upd("additionalOutputs",e.target.value)} placeholder={"alb_arn = arn:aws:...
-iam_role_arns = {"app": "arn:aws:iam::..."}"} rows={3} style={{...fs,resize:"vertical"}}/>
+      <textarea
+        value={value.additionalOutputs||""}
+        onChange={e=>upd("additionalOutputs",e.target.value)}
+        placeholder="alb_arn = arn:aws:elasticloadbalancing:..."
+        rows={3}
+        style={{...fs,resize:"vertical"}}
+      />
       <div style={{background:"#060d1a",border:"1px solid #0f2944",borderRadius:7,padding:"8px 12px",marginTop:4}}>
         <div style={{fontSize:9,color:"#38bdf8",fontFamily:"JetBrains Mono",marginBottom:3}}>💡 GET YOUR OUTPUTS</div>
         <div style={{fontSize:10,color:"#475569",fontFamily:"JetBrains Mono",lineHeight:1.7}}>
@@ -1685,6 +1689,7 @@ iam_role_arns = {"app": "arn:aws:iam::..."}"} rows={3} style={{...fs,resize:"ver
     </div>}
   </div>;
 }
+
 
 // ─── App ──────────────────────────────────────────────────────────────────
 const INIT_FORM={appDescription:"",cloud:"",pipeline:"",iacTool:"terraform",deployTarget:"",region:"",drRegion:"",compliance:"",extras:[],resources:[],microservices:[],configTool:"",configPresets:[],existingInfra:{enabled:false,vpcId:"",privateSubnets:"",publicSubnets:"",dbEndpoint:"",dbSecretArn:"",additionalOutputs:""}};
