@@ -834,8 +834,7 @@ ${f.microservices.map(s=>`- ecs/task-definition-${s.name}.json`).join("\n")}
 - ecs/register-tasks.sh (aws ecs register-task-definition for each task def JSON)
 - ecs/deploy.sh (aws ecs update-service --force-new-deployment for each service, waits for stability)
 - ecs/docker-compose.yml (local dev that mirrors ECS task structure)
-- ecs/smoke-tests/smoke_test.sh (curl ALB endpoints, PASS/FAIL per check)`}
-Inline comments throughout.`
+- ecs/smoke-tests/smoke_test.sh (curl ALB endpoints, PASS/FAIL per check)`:""}\nInline comments throughout.`
     },
 
     security:{system:SYS,user:
