@@ -413,80 +413,137 @@ const CONFIG_TOOLS=[
 ];
 const CONFIG_PRESETS={
   "Web Servers":  [
-    {id:"nginx",     label:"Nginx",       icon:"🟢", desc:"Reverse proxy + web server"},
-    {id:"apache",    label:"Apache HTTPD",icon:"🪶", desc:"Apache 2.4 + modules"},
-    {id:"haproxy",   label:"HAProxy",     icon:"⚖️", desc:"TCP/HTTP load balancer"},
-    {id:"caddy",     label:"Caddy",       icon:"🦥", desc:"Auto HTTPS web server"},
+    {id:"nginx",     label:"Nginx",         icon:"🟢", desc:"Reverse proxy, SSL termination, rate limiting, gzip, HTTP/2"},
+    {id:"apache",    label:"Apache HTTPD",  icon:"🪶", desc:"Apache 2.4 + mod_ssl, mod_rewrite, mod_proxy, MPM tuning"},
+    {id:"haproxy",   label:"HAProxy",       icon:"⚖️", desc:"L4/L7 load balancer, health checks, stats page, ACLs"},
+    {id:"caddy",     label:"Caddy",         icon:"🦥", desc:"Auto HTTPS (Let's Encrypt), HTTP/3, reverse proxy"},
+    {id:"traefik",   label:"Traefik",       icon:"🔀", desc:"Cloud-native reverse proxy, Let's Encrypt, Docker/K8s provider"},
+    {id:"varnish",   label:"Varnish Cache", icon:"⚡", desc:"HTTP accelerator, VCL config, cache invalidation"},
   ],
   "App Servers":  [
-    {id:"tomcat",    label:"Tomcat",      icon:"🐱", desc:"Java Servlet container"},
-    {id:"jetty",     label:"Jetty",       icon:"⛵", desc:"Embedded Java server"},
-    {id:"pm2",       label:"PM2",         icon:"🔄", desc:"Node.js process manager"},
-    {id:"gunicorn",  label:"Gunicorn",    icon:"🦄", desc:"Python WSGI server"},
-    {id:"uwsgi",     label:"uWSGI",       icon:"🔌", desc:"Python application server"},
-    {id:"puma",      label:"Puma",        icon:"🦁", desc:"Ruby concurrent web server"},
+    {id:"tomcat",    label:"Tomcat",        icon:"🐱", desc:"Tomcat 10 Servlet container, JVM tuning, thread pool, APR connector"},
+    {id:"jetty",     label:"Jetty",         icon:"⛵", desc:"Embedded Java server, WebSocket, async, HTTP/2"},
+    {id:"pm2",       label:"PM2",           icon:"🔄", desc:"Node.js cluster mode, ecosystem.config.js, log rotation, startup script"},
+    {id:"gunicorn",  label:"Gunicorn",      icon:"🦄", desc:"Python WSGI, worker class (gevent/uvicorn), systemd socket activation"},
+    {id:"uwsgi",     label:"uWSGI",         icon:"🔌", desc:"Python uWSGI, emperor mode, vassal configs, stats server"},
+    {id:"puma",      label:"Puma",          icon:"🦁", desc:"Ruby Puma, clustered mode, systemd integration, before_fork hooks"},
+    {id:"unicorn",   label:"Unicorn",       icon:"🦄", desc:"Ruby Unicorn, preload_app, before_fork, zero-downtime restarts"},
+    {id:"passenger", label:"Passenger",     icon:"🚀", desc:"Phusion Passenger, standalone or Nginx integration, Ruby/Python/Node"},
   ],
   "Runtimes":     [
-    {id:"nodejs",    label:"Node.js",     icon:"💚", desc:"Node.js LTS + npm"},
-    {id:"java",      label:"Java/OpenJDK",icon:"☕", desc:"OpenJDK 17/21 runtime"},
-    {id:"python",    label:"Python",      icon:"🐍", desc:"Python 3 + pip + venv"},
-    {id:"ruby",      label:"Ruby",        icon:"💎", desc:"Ruby runtime + bundler"},
-    {id:"golang",    label:"Go",          icon:"🐹", desc:"Go runtime + tools"},
-    {id:"dotnet",    label:".NET",        icon:"🔵", desc:".NET 8 runtime"},
-    {id:"php",       label:"PHP",         icon:"🐘", desc:"PHP-FPM + composer"},
+    {id:"nodejs",    label:"Node.js",       icon:"💚", desc:"Node.js LTS via nvm, npm ci, global packages, env vars"},
+    {id:"java",      label:"Java/OpenJDK",  icon:"☕", desc:"OpenJDK 17/21, JAVA_HOME, heap sizing, GC tuning (G1/ZGC)"},
+    {id:"python",    label:"Python",        icon:"🐍", desc:"Python 3 via pyenv, pip, venv, pipenv/poetry, uwsgi/gunicorn"},
+    {id:"ruby",      label:"Ruby",          icon:"💎", desc:"Ruby via rbenv/rvm, bundler, gem config, jemalloc"},
+    {id:"golang",    label:"Go",            icon:"🐹", desc:"Go toolchain, GOPATH, build flags, static binary deployment"},
+    {id:"dotnet",    label:".NET",          icon:"🔵", desc:".NET 8 runtime + SDK, dotnet-install, appsettings, service user"},
+    {id:"php",       label:"PHP-FPM",       icon:"🐘", desc:"PHP 8.x FPM, pool config, opcache, composer, extensions (pdo, gd, curl)"},
+    {id:"erlang",    label:"Erlang/Elixir", icon:"💜", desc:"BEAM runtime, mix releases, runtime.exs, clustering"},
+    {id:"rust",      label:"Rust",          icon:"🦀", desc:"Rust toolchain via rustup, cargo build --release, strip binary"},
   ],
   "Containers":   [
-    {id:"docker",    label:"Docker Engine",icon:"🐳", desc:"Docker CE + daemon config"},
-    {id:"compose",   label:"Docker Compose",icon:"🐙",desc:"Multi-container compose"},
-    {id:"containerd",label:"containerd",  icon:"📦", desc:"Container runtime"},
-    {id:"buildkit",  label:"BuildKit",    icon:"🔨", desc:"Advanced image build cache"},
+    {id:"docker",      label:"Docker Engine",   icon:"🐳", desc:"Docker CE, daemon.json (log-driver, storage-driver), TLS, registry mirror"},
+    {id:"compose",     label:"Docker Compose",  icon:"🐙", desc:"Compose v2, production overrides, health checks, restart policies"},
+    {id:"containerd",  label:"containerd",      icon:"📦", desc:"containerd + nerdctl, snapshotter config, CNI plugins"},
+    {id:"buildkit",    label:"BuildKit",        icon:"🔨", desc:"BuildKit daemon, registry cache, multi-platform builds"},
+    {id:"podman",      label:"Podman",          icon:"🦭", desc:"Rootless Podman, systemd quadlets, pods, auto-update"},
   ],
   "Databases":    [
-    {id:"mysql_svc", label:"MySQL Server",icon:"🐬", desc:"MySQL 8 server + config"},
-    {id:"pg_svc",    label:"PostgreSQL",  icon:"🐘", desc:"PostgreSQL 15 + pg_hba"},
-    {id:"redis_svc", label:"Redis Server",icon:"⚡", desc:"Redis 7 server + sentinel"},
-    {id:"mongodb_s", label:"MongoDB",     icon:"🍃", desc:"MongoDB 7 + replica set"},
-    {id:"elastic",   label:"Elasticsearch",icon:"🔍",desc:"Elasticsearch 8 node"},
-    {id:"rabbit",    label:"RabbitMQ",    icon:"🐰", desc:"RabbitMQ + management UI"},
+    {id:"mysql_svc",   label:"MySQL Server",    icon:"🐬", desc:"MySQL 8, my.cnf tuning (innodb_buffer_pool, binlog), slow query log, users"},
+    {id:"pg_svc",      label:"PostgreSQL",      icon:"🐘", desc:"PostgreSQL 15+, pg_hba.conf, postgresql.conf (shared_buffers, max_connections, WAL), pg_dump"},
+    {id:"redis_svc",   label:"Redis",           icon:"⚡", desc:"Redis 7, redis.conf (maxmemory, eviction), Sentinel, ACL users, TLS"},
+    {id:"mongodb_s",   label:"MongoDB",         icon:"🍃", desc:"MongoDB 7 replica set, mongod.conf, WiredTiger cache, auth, oplog size"},
+    {id:"elastic",     label:"Elasticsearch",   icon:"🔍", desc:"ES 8 node, JVM heap, cluster.name, discovery, TLS, ILM policies"},
+    {id:"rabbit",      label:"RabbitMQ",        icon:"🐰", desc:"RabbitMQ 3.x, vhosts, users, policies, federation, management UI"},
+    {id:"kafka_svc",   label:"Kafka",           icon:"📨", desc:"Apache Kafka, server.properties, topic partitions, retention, JVM, Zookeeper"},
+    {id:"cassandra",   label:"Cassandra",       icon:"💿", desc:"Cassandra 4.x, cassandra.yaml, JVM heap, snitch, compaction strategy"},
+    {id:"mariadb",     label:"MariaDB",         icon:"🦭", desc:"MariaDB 10.x, Galera cluster config, my.cnf tuning, replication"},
+  ],
+  "Caching":      [
+    {id:"memcached",   label:"Memcached",       icon:"🧠", desc:"Memcached, memory limits, connection limits, SASL auth"},
+    {id:"varnish_c",   label:"Varnish Cache",   icon:"⚡", desc:"Varnish VCL rules, TTL, grace mode, backend health probes"},
+    {id:"redis_cluster",label:"Redis Cluster",  icon:"🔴", desc:"Redis Cluster mode, hash slots, replica config, failover settings"},
+  ],
+  "Message Queues":[
+    {id:"celery",      label:"Celery",          icon:"🌿", desc:"Celery workers, beat scheduler, flower monitoring, concurrency, queues"},
+    {id:"sidekiq",     label:"Sidekiq",         icon:"💎", desc:"Sidekiq 7, concurrency, queues, cron jobs, web UI, Redis connection"},
+    {id:"resque",      label:"Resque",          icon:"🔧", desc:"Resque workers, queue priorities, failure handling, resque-web"},
   ],
   "Monitoring":   [
-    {id:"node_exp",  label:"Prometheus Exporter",icon:"📊",desc:"node_exporter for Prometheus"},
-    {id:"grafana",   label:"Grafana",     icon:"📈", desc:"Grafana + default dashboards"},
-    {id:"datadog",   label:"Datadog Agent",icon:"🐶", desc:"Datadog agent + integrations"},
-    {id:"newrelic",  label:"New Relic",   icon:"📡", desc:"New Relic infrastructure agent"},
-    {id:"cw_agent",  label:"CloudWatch Agent",icon:"👁️",desc:"CW metrics + logs agent"},
-    {id:"otel",      label:"OpenTelemetry",icon:"🔭", desc:"OTEL collector + traces"},
+    {id:"node_exp",    label:"Prometheus Exporter",icon:"📊",desc:"node_exporter: CPU, memory, disk, network, filesystem metrics"},
+    {id:"grafana",     label:"Grafana",          icon:"📈", desc:"Grafana OSS, datasources.yml, provisioned dashboards, SMTP, OAuth"},
+    {id:"datadog",     label:"Datadog Agent",    icon:"🐶", desc:"Datadog agent v7, integrations (mysql/nginx/docker), APM, log collection"},
+    {id:"newrelic",    label:"New Relic",        icon:"📡", desc:"New Relic infra agent, on-host integrations, distributed tracing"},
+    {id:"cw_agent",    label:"CloudWatch Agent", icon:"👁️", desc:"CW agent, config.json (metrics + logs), procstat, netstat"},
+    {id:"otel",        label:"OpenTelemetry",    icon:"🔭", desc:"OTEL collector, receivers (OTLP/Prometheus), exporters, processors"},
+    {id:"zabbix",      label:"Zabbix Agent",     icon:"👾", desc:"Zabbix agent 2, UserParameters, active checks, TLS encryption"},
+    {id:"prometheus",  label:"Prometheus Server",icon:"🔥", desc:"Prometheus server, scrape_configs, alerting rules, TSDB retention, remote_write"},
+    {id:"alertmanager",label:"Alertmanager",     icon:"🚨", desc:"Alertmanager, receivers (Slack/PagerDuty/email), inhibit rules, silences"},
   ],
   "Logging":      [
-    {id:"filebeat",  label:"Filebeat",    icon:"📜", desc:"Log shipper to ELK/OpenSearch"},
-    {id:"fluentd",   label:"Fluentd",     icon:"🌊", desc:"Log aggregation + routing"},
-    {id:"logrotate", label:"Logrotate",   icon:"🔃", desc:"Log rotation configuration"},
+    {id:"filebeat",    label:"Filebeat",         icon:"📜", desc:"Filebeat 8, inputs (log/container), processors, Elasticsearch/Logstash output"},
+    {id:"fluentd",     label:"Fluentd",          icon:"🌊", desc:"Fluentd, td-agent, match rules, buffer tuning, Elasticsearch/S3 output"},
+    {id:"fluentbit",   label:"Fluent Bit",       icon:"🦋", desc:"Fluent Bit (lightweight), parsers, filters, multiline, Loki/ES output"},
+    {id:"logstash",    label:"Logstash",         icon:"🔧", desc:"Logstash pipeline, grok patterns, mutate filters, conditional routing"},
+    {id:"promtail",    label:"Promtail",         icon:"📋", desc:"Promtail (Loki agent), scrape_configs, pipeline stages, labels"},
+    {id:"logrotate",   label:"Logrotate",        icon:"🔃", desc:"Logrotate, daily/weekly rotation, compress, postrotate scripts, copytruncate"},
+    {id:"syslog",      label:"Rsyslog/Syslog",   icon:"📝", desc:"rsyslog, remote syslog over TLS, structured logging, log forwarding"},
   ],
   "Security":     [
-    {id:"certbot",   label:"Certbot/SSL", icon:"🔒", desc:"Let's Encrypt TLS certificates"},
-    {id:"fail2ban",  label:"Fail2ban",    icon:"🛡️", desc:"Brute-force IP banning"},
-    {id:"ufw",       label:"UFW/iptables",icon:"🔥", desc:"Firewall rules"},
-    {id:"auditd",    label:"auditd",      icon:"🔍", desc:"Linux audit daemon"},
-    {id:"sysctl_h",  label:"Kernel Hardening",icon:"⚙️",desc:"sysctl security params"},
-    {id:"ssh_hard",  label:"SSH Hardening",icon:"🔑", desc:"SSH daemon config hardening"},
-    {id:"clamav",    label:"ClamAV",      icon:"🦠", desc:"Antivirus scanning"},
-    {id:"vault_ag",  label:"Vault Agent", icon:"🔐", desc:"HashiCorp Vault agent sidecar"},
+    {id:"certbot",     label:"Certbot/SSL",      icon:"🔒", desc:"Let's Encrypt via certbot, standalone/webroot/DNS, auto-renew systemd timer"},
+    {id:"fail2ban",    label:"Fail2ban",         icon:"🛡️", desc:"Fail2ban, jail.conf, SSH/Nginx/Apache filters, ban duration, email alerts"},
+    {id:"ufw",         label:"UFW Firewall",     icon:"🔥", desc:"UFW rules (allow/deny by port/IP/subnet), logging, before.rules for DOCKER"},
+    {id:"iptables",    label:"iptables/nftables", icon:"🧱",desc:"iptables or nftables rules, INPUT/OUTPUT/FORWARD chains, MASQUERADE, persistence"},
+    {id:"auditd",      label:"auditd",           icon:"🔍", desc:"Linux audit daemon, audit.rules (syscall monitoring, file watches), aureport"},
+    {id:"sysctl_h",    label:"Kernel Hardening", icon:"⚙️", desc:"sysctl: net.ipv4 hardening, kernel.randomize_va_space, fs.suid_dumpable, limits.conf"},
+    {id:"ssh_hard",    label:"SSH Hardening",    icon:"🔑", desc:"sshd_config: disable root, PubkeyAuth only, AllowUsers, MaxAuthTries, Banner"},
+    {id:"clamav",      label:"ClamAV",           icon:"🦠", desc:"ClamAV daemon, freshclam auto-update, on-access scanning, email alerts"},
+    {id:"vault_ag",    label:"Vault Agent",      icon:"🔐", desc:"HashiCorp Vault agent, auto-auth (AWS IAM/AppRole), template rendering, caching"},
+    {id:"selinux",     label:"SELinux",          icon:"🔴", desc:"SELinux enforcing mode, audit2allow, custom policies, booleans, fcontext"},
+    {id:"apparmor",    label:"AppArmor",         icon:"🟠", desc:"AppArmor profiles for nginx/mysql/redis, enforce mode, deny rules"},
+    {id:"crowdsec",    label:"CrowdSec",         icon:"👥", desc:"CrowdSec agent + bouncer, scenarios, collections, local API, hub updates"},
+    {id:"wazuh",       label:"Wazuh Agent",      icon:"🦅", desc:"Wazuh HIDS agent, ossec.conf, rootcheck, file integrity monitoring, active response"},
+    {id:"aide",        label:"AIDE/Tripwire",    icon:"📁", desc:"AIDE file integrity checker, database init, cron check, email on changes"},
   ],
   "System":       [
-    {id:"users",     label:"Users & Sudo",icon:"👤", desc:"User management + sudoers"},
-    {id:"swap",      label:"Swap Space",  icon:"💱", desc:"Configure swap partition"},
-    {id:"ntp",       label:"NTP/Chrony",  icon:"⏰", desc:"Time synchronization"},
-    {id:"nfs_svc",   label:"NFS Server",  icon:"💾", desc:"NFS server + exports"},
-    {id:"cron",      label:"Cron Jobs",   icon:"⏱️", desc:"Scheduled tasks + crontab"},
+    {id:"users",       label:"Users & Sudo",     icon:"👤", desc:"useradd/usermod, sudoers.d, SSH authorized_keys, password policy (PAM)"},
+    {id:"swap",        label:"Swap Space",       icon:"💱", desc:"swapfile or swap partition, vm.swappiness tuning, mkswap, swapon"},
+    {id:"ntp",         label:"NTP/Chrony",       icon:"⏰", desc:"chrony or ntpd, NTP servers, stratum, makestep, RTC sync"},
+    {id:"nfs_svc",     label:"NFS Server",       icon:"💾", desc:"NFS v4 server, /etc/exports, idmapd, Kerberos auth, firewall rules"},
+    {id:"samba",       label:"Samba/CIFS",       icon:"🖧",  desc:"Samba server, smb.conf, shares, AD member, winbind integration"},
+    {id:"cron",        label:"Cron Jobs",        icon:"⏱️", desc:"crontab/cron.d entries, user crontabs, anacron, environment variables"},
+    {id:"limits",      label:"System Limits",    icon:"📏", desc:"limits.conf: nofile, nproc, stack; systemd LimitNOFILE, sysctl overrides"},
+    {id:"tuned",       label:"tuned Profile",    icon:"🎛️", desc:"tuned-adm, throughput-performance/latency-performance/virtual-guest profiles"},
+    {id:"grub",        label:"Kernel/GRUB",      icon:"🥾", desc:"GRUB cmdline (quiet, nosmt, mitigations), kernel parameters, dracut"},
+    {id:"packages",    label:"Package Management",icon:"📦",desc:"apt/yum/dnf: unattended-upgrades, automatic security patches, package pins"},
+  ],
+  "Networking":   [
+    {id:"keepalived",  label:"Keepalived/VRRP",  icon:"🔄", desc:"Keepalived, VRRP config, virtual IP failover, health check scripts"},
+    {id:"wireguard",   label:"WireGuard VPN",    icon:"🔐", desc:"WireGuard interface config, peer setup, PostUp/PostDown rules, systemd-networkd"},
+    {id:"openvpn",     label:"OpenVPN",          icon:"🛡️", desc:"OpenVPN server, TLS auth, client configs, CCD, iptables NAT, easy-rsa PKI"},
+    {id:"bind9",       label:"BIND9 DNS",        icon:"🌐", desc:"BIND9 authoritative/recursive, named.conf, zone files, DNSSEC, ACLs"},
+    {id:"postfix",     label:"Postfix/SMTP",     icon:"📧", desc:"Postfix main.cf, relay, TLS, SASL auth, SPF/DKIM, mailq management"},
+    {id:"netplan",     label:"Netplan/Network",  icon:"🌐", desc:"netplan YAML, static IP, bonding, VLAN, routes, nameservers"},
   ],
   "Service Mesh": [
-    {id:"consul",    label:"Consul Agent",icon:"🏛️", desc:"Service discovery + health check"},
-    {id:"envoy",     label:"Envoy Proxy", icon:"🔌", desc:"Envoy sidecar proxy"},
+    {id:"consul",      label:"Consul Agent",     icon:"🏛️", desc:"Consul agent, service registration, health checks, KV store, ACL tokens"},
+    {id:"envoy",       label:"Envoy Proxy",      icon:"🔌", desc:"Envoy static/dynamic config, clusters, listeners, xDS API, tracing"},
+    {id:"linkerd",     label:"Linkerd Agent",    icon:"🔗", desc:"Linkerd proxy, mTLS, traffic metrics, retries, timeouts, circuit breaking"},
+    {id:"istio_side",  label:"Istio Sidecar",    icon:"🕸️", desc:"Istio sidecar injection, VirtualService, DestinationRule, PeerAuthentication"},
   ],
   "CI/CD Agents": [
-    {id:"jenkins_a", label:"Jenkins Agent",icon:"🎩", desc:"Jenkins build agent (JNLP)"},
-    {id:"gh_runner", label:"GitHub Runner",icon:"⚙️", desc:"Self-hosted GitHub Actions runner"},
-    {id:"gl_runner", label:"GitLab Runner",icon:"🦊", desc:"GitLab CI registered runner"},
+    {id:"jenkins_a",   label:"Jenkins Agent",    icon:"🎩", desc:"Jenkins JNLP agent, workDir, tunnel, credentials, Docker-in-Docker"},
+    {id:"gh_runner",   label:"GitHub Runner",    icon:"⚙️", desc:"Self-hosted GitHub Actions runner, labels, groups, auto-update, service mode"},
+    {id:"gl_runner",   label:"GitLab Runner",    icon:"🦊", desc:"GitLab Runner, executor (docker/shell), tags, concurrent, cache, S3"},
+    {id:"az_agent",    label:"Azure DevOps Agent",icon:"🔷",desc:"Azure Pipelines self-hosted agent, capability management, agent pools"},
+    {id:"argocd",      label:"ArgoCD Agent",     icon:"🐙", desc:"ArgoCD ApplicationSet, sync policies, health checks, RBAC, notifications"},
+    {id:"flux",        label:"Flux CD Agent",    icon:"🌊", desc:"Flux GitOps, HelmRelease, Kustomization, image automation, SOPS decryption"},
+  ],
+  "Performance":  [
+    {id:"pgbouncer",   label:"PgBouncer",        icon:"🏊", desc:"PgBouncer connection pooler, pool_mode (transaction/session), max_client_conn, auth_file"},
+    {id:"nginx_cache", label:"Nginx Proxy Cache",icon:"🗄️", desc:"proxy_cache_path, cache zones, Cache-Control, cache bypass rules, purge"},
+    {id:"bbr",         label:"TCP BBR",          icon:"📶", desc:"net.core.default_qdisc=fq, net.ipv4.tcp_congestion_control=bbr, socket buffers"},
+    {id:"hugepages",   label:"HugePages",        icon:"📄", desc:"Transparent HugePages, vm.nr_hugepages, NUMA policy for Java/Redis/Postgres"},
   ],
 };
 
@@ -774,8 +831,16 @@ ${f.microservices.map(s=>`- helm/app/templates/deployment-${s.name}.yaml`).join(
 - helm/app/templates/hpa-frontend.yaml + hpa-backend.yaml
 - helm/app/templates/configmap.yaml + secret.yaml + poddisruptionbudget.yaml
 - helm/app/templates/serviceaccount.yaml + rbac.yaml
-- helm/app/smoke-tests/smoke_test.yaml (Helm test pod)`:
-`K8s manifests (prefix "# File: k8s/"):
+- helm/app/smoke-tests/smoke_test.yaml (Helm test pod)`:isEC2Like?`EC2/VM deployment files (prefix "# File: app/"):
+- app/scripts/deploy.sh (rolling deploy: pull from S3/ECR → stop old → start new → ALB health check)
+- app/scripts/bootstrap.sh (EC2 user_data: install runtime, fetch secrets from SSM/SecretsManager, start app)
+- app/scripts/health_check.sh (curl /health on each service port — used by ALB target group)
+- app/systemd/frontend.service (systemd unit: ExecStart, Restart=always, EnvironmentFile)
+- app/systemd/backend.service (systemd unit per microservice)
+- app/docker-compose.prod.yml (alternative: run all services via Docker Compose on instance)
+- app/nginx/nginx.conf (reverse proxy: upstream blocks per named service, rate limiting, gzip)
+- app/nginx/sites/app.conf (server block: proxy_pass to each service port, health endpoint)
+- app/scripts/rollback.sh (revert to previous artifact version, restart services, verify health)`:`K8s manifests (prefix "# File: k8s/"):
 - k8s/namespace.yaml
 - k8s/deployment-frontend.yaml + deployment-backend.yaml
 ${f.microservices.map(s=>`- k8s/deployment-${s.name}.yaml`).join("\n")}
@@ -784,14 +849,7 @@ ${f.microservices.map(s=>`- k8s/deployment-${s.name}.yaml`).join("\n")}
 - k8s/hpa-frontend.yaml + hpa-backend.yaml
 - k8s/configmap.yaml + secret.yaml + poddisruptionbudget-frontend.yaml + poddisruptionbudget-backend.yaml
 - k8s/smoke-tests/smoke_test.sh`}
-${isEC2Like?`
-EC2/VM deployment files:
-- scripts/deploy.sh (pull artifact from S3/ECR, stop old service, start new, health check)
-- systemd/app.service (systemd unit file for each microservice — ExecStart, Restart=always, env file)
-- docker-compose.prod.yml (alternative: run all services via Docker Compose on EC2)
-- scripts/bootstrap.sh (user_data script: install Docker/Node/Python, fetch secrets from SSM, start services)
-- scripts/health_check.sh (curl /health on each service port, used by ALB target group health checks)
-- nginx/app.conf (nginx reverse proxy config: upstream blocks per named service, pass headers)`:""}\nInline comments throughout.`
+Inline comments throughout.`
     },
 
     security:{system:SYS,user:
@@ -823,9 +881,14 @@ ${f.configTool==="ansible"||!f.configTool?`Files prefixed "# File: ansible/":
 - ansible/group_vars/dev.yml + prod.yml
 - ansible/playbooks/site.yml (master playbook: imports all role plays)
 - ansible/playbooks/bootstrap.yml (first-run: update OS, install base packages, set hostname, configure swap, NTP, users)
-${(f.configPresets||[]).filter(p=>["nginx","apache","haproxy","caddy"].includes(p)).length?"\n- ansible/playbooks/webserver.yml":""}
-${(f.configPresets||[]).filter(p=>["mysql_svc","pg_svc","redis_svc","mongodb_s"].includes(p)).length?"\n- ansible/playbooks/database.yml":""}
-${(f.configPresets||[]).filter(p=>["docker","compose"].includes(p)).length?"\n- ansible/playbooks/docker.yml":""}
+${(f.configPresets||[]).filter(p=>["nginx","apache","haproxy","caddy","traefik","varnish"].includes(p)).length?"\n- ansible/playbooks/webserver.yml":""}
+${(f.configPresets||[]).filter(p=>["mysql_svc","pg_svc","redis_svc","mongodb_s","elastic","rabbit","kafka_svc","cassandra","mariadb"].includes(p)).length?"\n- ansible/playbooks/database.yml":""}
+${(f.configPresets||[]).filter(p=>["docker","compose","containerd","podman"].includes(p)).length?"\n- ansible/playbooks/containers.yml":""}
+${(f.configPresets||[]).filter(p=>["node_exp","grafana","prometheus","alertmanager","datadog","otel","zabbix"].includes(p)).length?"\n- ansible/playbooks/monitoring.yml":""}
+${(f.configPresets||[]).filter(p=>["certbot","fail2ban","ufw","iptables","ssh_hard","sysctl_h","selinux","apparmor","wazuh","aide","crowdsec"].includes(p)).length?"\n- ansible/playbooks/security-hardening.yml":""}
+${(f.configPresets||[]).filter(p=>["celery","sidekiq","kafka_svc","resque"].includes(p)).length?"\n- ansible/playbooks/message-queues.yml":""}
+${(f.configPresets||[]).filter(p=>["keepalived","wireguard","openvpn","bind9","postfix"].includes(p)).length?"\n- ansible/playbooks/networking.yml":""}
+${(f.configPresets||[]).filter(p=>["pgbouncer","nginx_cache","bbr","hugepages"].includes(p)).length?"\n- ansible/playbooks/performance.yml":""}
 For EACH software preset (${(f.configPresets||[]).join(", ")||"common"}), generate a full Ansible role:
 - ansible/roles/<name>/tasks/main.yml (install + configure + verify)
 - ansible/roles/<name>/handlers/main.yml (restart service on config change)
@@ -969,6 +1032,7 @@ function FileTree({tree,selectedPath,onSelect,depth=0}){
 function ResourceBuilder({cloud,resources,onChange}){
   const [search,setSearch]=useState("");
   const [activeCat,setActiveCat]=useState("All");
+  if(!cloud)return <div style={{color:"#475569",fontFamily:"JetBrains Mono",fontSize:12,padding:20,textAlign:"center"}}>Select a cloud provider in Step 1 first.</div>;
   const catalog=SC[cloud]||{};
   const cats=["All",...Object.keys(catalog)];
   const selectedIds=resources.map(r=>r.serviceId);
@@ -1957,7 +2021,7 @@ export default function App(){
         </div>
 
         <div style={{background:"#0a1628",border:"1px solid #1e3a5f",borderRadius:12,padding:18,marginBottom:14}}>
-          {step2Tab==="resources"&&<div>
+          {step2Tab==="resources"&&form.cloud&&<div>
           {/* Environment presets */}
           <div style={{marginBottom:16}}>
             <div style={{fontSize:10,color:"#38bdf8",letterSpacing:2,fontFamily:"JetBrains Mono",marginBottom:9}}>ENVIRONMENT PRESETS <span style={{color:"#475569",fontWeight:400}}>(click to pre-fill)</span></div>
@@ -1988,8 +2052,8 @@ export default function App(){
           {!form.resources.length&&!form.microservices.length&&!form.configTool&&<span style={{color:"#475569",fontSize:10,fontFamily:"JetBrains Mono"}}>Nothing selected — Claude will use sensible defaults</span>}
         </div>
 
-        {/* Live architecture preview in step 2 */}
-        {(form.resources.length>0||form.deployTarget)&&<div style={{marginBottom:14}}>
+        {/* Live architecture preview in step 2 - only when resources selected */}
+        {form.resources.length>0&&<div style={{marginBottom:14}}>
           <ArchDiagram resources={form.resources} microservices={form.microservices} cloud={form.cloud} deployTarget={form.deployTarget}/>
         </div>}
 
