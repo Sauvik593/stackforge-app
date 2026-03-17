@@ -667,8 +667,7 @@ ROOT outputs.tf MUST export a complete reference sheet:
   output "db_secret_arn"       { value = module.database.secret_arn }
   output "bucket_arns"         { value = module.storage.bucket_arns }
   output "iam_role_arns"       { value = module.iam.role_arns }
-  ${f.deployTarget==="ec2"?"output "alb_dns_name"  { value = module.compute.alb_dns_name }":f.deployTarget==="eks"?"output "cluster_name" { value = module.compute.cluster_name }
-  output "cluster_endpoint" { value = module.compute.cluster_endpoint }":"output "service_arns" { value = module.compute.service_arns }"}
+  ${f.deployTarget==="ec2"?`output \"alb_dns_name\"  { value = module.compute.alb_dns_name }`:f.deployTarget==="eks"?`output \"cluster_name\" { value = module.compute.cluster_name }\n  output \"cluster_endpoint\" { value = module.compute.cluster_endpoint }`:`output \"service_arns\" { value = module.compute.service_arns }`}
 
 EXTENDING THIS STACK (future additions):
 Add a comment block at the top of outputs.tf:
