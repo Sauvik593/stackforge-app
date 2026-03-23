@@ -12,13 +12,34 @@ const supabase = createClient(
 const SESSION_WINDOW_MINUTES = 15
 const DAILY_CALL_LIMIT = 50
 
+// Derive allowed origin: explicit env var → Vercel deployment URL → dev fallback
+function getAllowedOrigin() {
+  if (process.env.ALLOWED_ORIGIN) return process.env.ALLOWED_ORIGIN
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
+  // Local dev only — never reaches production without one of the above
+  return '*'
+}
+
 export default async function handler(req, res) {
+  const allowedOrigin = getAllowedOrigin()
+
   // ── CORS ──────────────────────────────────────────────────────────────────
-  res.setHeader('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGIN || '*')
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin)
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  res.setHeader('Vary', 'Origin')
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+
+  // ── Validate required env vars ─────────────────────────────────────────────
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.error('[Config] ANTHROPIC_API_KEY is not set')
+    return res.status(500).json({ error: 'Server configuration error. Contact support.' })
+  }
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('[Config] SUPABASE_SERVICE_ROLE_KEY is not set')
+    return res.status(500).json({ error: 'Server configuration error. Contact support.' })
+  }
 
   // ── 1. Extract + verify Supabase JWT ──────────────────────────────────────
   const authHeader = req.headers.authorization || ''
@@ -64,9 +85,16 @@ export default async function handler(req, res) {
     })
   }
 
-  // ── 4. Daily rate limit ────────────────────────────────────────────────────
+  // ── 4. Daily rate limit — reset at midnight UTC ────────────────────────────
   const resetAt = sub.api_calls_reset_at ? new Date(sub.api_calls_reset_at) : new Date(0)
-  const isNewDay = (now - resetAt) > 86400000
+  const nowUTC = new Date(now.toISOString())
+  const resetDayUTC = new Date(Date.UTC(
+    resetAt.getUTCFullYear(), resetAt.getUTCMonth(), resetAt.getUTCDate()
+  ))
+  const todayUTC = new Date(Date.UTC(
+    nowUTC.getUTCFullYear(), nowUTC.getUTCMonth(), nowUTC.getUTCDate()
+  ))
+  const isNewDay = todayUTC > resetDayUTC
   const callsToday = isNewDay ? 0 : (sub.api_calls_today || 0)
 
   if (callsToday >= DAILY_CALL_LIMIT) {
@@ -83,14 +111,19 @@ export default async function handler(req, res) {
     api_calls_reset_at: isNewDay ? now.toISOString() : sub.api_calls_reset_at
   }).eq('user_id', user.id)
 
-  // ── 6. Parse request body ──────────────────────────────────────────────────
+  // ── 6. Parse + validate request body ──────────────────────────────────────
   const { system, messages, max_tokens = 8000 } = req.body || {}
-  if (!messages || !Array.isArray(messages)) {
-    return res.status(400).json({ error: 'Invalid request: expected { system, messages }' })
+  if (!messages || !Array.isArray(messages) || messages.length === 0) {
+    return res.status(400).json({ error: 'Invalid request: expected { system, messages[] }' })
+  }
+  // Validate each message has role + content
+  for (const m of messages) {
+    if (!m.role || !m.content) {
+      return res.status(400).json({ error: 'Invalid message format: each message needs role and content' })
+    }
   }
 
-  // Log for debugging
-  console.log(`[Generate] user=${user.id} section=${req.body.section||'unknown'} max_tokens=${max_tokens}`)
+  console.log(`[Generate] user=${user.id} section=${req.body.section || 'unknown'} max_tokens=${max_tokens} calls_today=${callsToday + 1}/${DAILY_CALL_LIMIT}`)
 
   // ── 7. Call Anthropic ──────────────────────────────────────────────────────
   let anthropicRes, data
@@ -103,7 +136,7 @@ export default async function handler(req, res) {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-5',
         max_tokens: Math.min(max_tokens, 8000),
         system,
         messages
@@ -122,7 +155,6 @@ export default async function handler(req, res) {
     const errMsg = data?.error?.message || JSON.stringify(data)
     console.error('[Anthropic API error]', errType, errMsg)
 
-    // Surface specific errors helpfully
     if (errType === 'overloaded_error') {
       return res.status(503).json({ error: 'AI is overloaded. Please wait 30 seconds and retry.' })
     }
@@ -132,7 +164,7 @@ export default async function handler(req, res) {
     if (errType === 'authentication_error') {
       return res.status(500).json({ error: 'API key configuration error. Contact support.' })
     }
-    if (data?.error?.message?.includes('max_tokens')) {
+    if (errMsg.includes('max_tokens')) {
       return res.status(400).json({ error: 'Response too long. Try selecting fewer resources.' })
     }
     return res.status(502).json({
@@ -140,10 +172,8 @@ export default async function handler(req, res) {
     })
   }
 
-  // Check for stop reason
   if (data.stop_reason === 'max_tokens') {
-    console.warn('[Anthropic] Response truncated at max_tokens')
-    // Still return the partial response - it's usually complete enough
+    console.warn('[Anthropic] Response truncated at max_tokens for user', user.id)
   }
 
   console.log(`[Generate] done stop_reason=${data.stop_reason} input_tokens=${data.usage?.input_tokens} output_tokens=${data.usage?.output_tokens}`)

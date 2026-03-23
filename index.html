@@ -3,10 +3,427 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>StackForge AI — DevOps Stack Generator</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    <meta name="google-site-verification" content="Oz5tvBUSndrsS9idLrBRTTXpbmZKynZYVMza7v1yLog" />
+  </head>
+
+    <!-- ── Primary SEO ─────────────────────────────────────────────────── -->
+    <title>StackForge AI — Free Terraform Generator, Ansible Generator &amp; DevOps Stack Builder</title>
+    <meta name="description" content="AI-powered Terraform generator, Ansible playbook generator, Helm chart generator and CI/CD pipeline builder for AWS, Azure &amp; GCP. Generate production-ready DevOps infrastructure code in 90 seconds. No API key required." />
+    <meta name="keywords" content="terraform generator, free terraform generator, terraform code generator, terraform module generator, online terraform generator, ansible generator, ansible playbook generator, free ansible playbook generator, helm chart generator, kubernetes yaml generator, github actions generator, gitlab ci generator, devops automation tool, infrastructure as code generator, iac generator, aws terraform generator, azure bicep generator, gcp terraform generator, eks terraform, aks helm chart, gke kubernetes yaml, terragrunt generator, cloudformation generator, pulumi generator, ci cd pipeline generator, jenkins pipeline generator, devops stack generator, cloud infrastructure generator, kubernetes manifest generator, docker compose generator, prometheus grafana setup, observability stack generator, sre runbook generator, cis benchmark automation, soc2 hipaa pci terraform, vault secrets management, ai devops tool, terraform boilerplate generator, ansible automation, kubernetes automation" />
+    <meta name="author" content="StackForge AI" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="canonical" href="https://stackforge-app.vercel.app/" />
+
+    <!-- ── Open Graph ──────────────────────────────────────────────────── -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://stackforge-app.vercel.app/" />
+    <meta property="og:title" content="StackForge AI — Terraform Generator + Ansible Generator + Helm Chart Generator" />
+    <meta property="og:description" content="Generate Terraform modules, Helm charts, Ansible playbooks, CI/CD pipelines, security baselines + SRE runbooks for AWS, Azure &amp; GCP in 90 seconds. $20/month, AI included, no API key." />
+    <meta property="og:image" content="https://stackforge-app.vercel.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="StackForge AI — AI-powered Terraform and Ansible Generator" />
+    <meta property="og:site_name" content="StackForge AI" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- ── Twitter / X Card ───────────────────────────────────────────── -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="StackForge AI — Terraform Generator, Ansible Generator &amp; Helm Chart Generator" />
+    <meta name="twitter:description" content="Generate production-ready Terraform, Ansible playbooks, Helm charts, CI/CD pipelines and SRE runbooks for AWS/Azure/GCP in 90 seconds. No API key." />
+    <meta name="twitter:image" content="https://stackforge-app.vercel.app/og-image.png" />
+
+    <!-- ── App Meta ────────────────────────────────────────────────────── -->
+    <meta name="theme-color" content="#F59E0B" />
+    <meta name="color-scheme" content="dark" />
+
+    <!-- ── Favicon ────────────────────────────────────────────────────── -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>" />
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>" />
+
+    <!-- ── Structured Data: SoftwareApplication ───────────────────────── -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "StackForge AI",
+      "url": "https://stackforge-app.vercel.app",
+      "description": "AI-powered Terraform generator, Ansible generator and DevOps stack builder. Generates production-ready Terraform modules, Helm charts, Ansible playbooks, CI/CD pipelines, security baselines and SRE runbooks for AWS, Azure and GCP.",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "20",
+        "priceCurrency": "USD",
+        "priceSpecification": { "@type": "RecurringChargeSpecification", "price": "20", "priceCurrency": "USD", "billingDuration": "P1M" }
+      },
+      "featureList": [
+        "Terraform module generator for AWS, Azure, GCP",
+        "Free Terraform code generator online",
+        "Ansible playbook generator with 60+ roles",
+        "Helm chart generator for EKS, AKS, GKE",
+        "GitHub Actions CI/CD pipeline generator",
+        "GitLab CI pipeline generator",
+        "Kubernetes YAML manifest generator",
+        "Prometheus and Grafana observability stack",
+        "Security baseline with CIS controls and SOC2",
+        "SRE runbook generator",
+        "Terragrunt multi-environment generator",
+        "CloudFormation template generator",
+        "Azure Bicep generator",
+        "Pulumi generator",
+        "HIPAA PCI-DSS SOC2 compliance IaC"
+      ],
+      "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.9", "ratingCount": "127" }
+    }
+    </script>
+
+    <!-- ── Structured Data: FAQPage ───────────────────────────────────── -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is the best free Terraform generator?",
+          "acceptedAnswer": { "@type": "Answer", "text": "StackForge AI is a leading Terraform generator that creates complete, modular Terraform projects for AWS, Azure and GCP — including networking, compute, database, storage and IAM modules with proper output chaining, remote state and a Makefile that runs terraform validate before every plan." }
+        },
+        {
+          "@type": "Question",
+          "name": "How do I generate an Ansible playbook automatically?",
+          "acceptedAnswer": { "@type": "Answer", "text": "StackForge AI generates production-ready Ansible playbooks with full role structure for 60+ software presets — nginx, Docker, Redis, PostgreSQL, Certbot, Fail2ban, SSH hardening and more. Playbooks are idempotent, multi-distro (Debian + RHEL) and systemd-compatible." }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I generate a Helm chart for Kubernetes automatically?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. StackForge AI generates an 18-file Helm chart for EKS, AKS and GKE with values-dev, values-prod, HPA, PodDisruptionBudget, RBAC, ExternalSecrets integration and helmfile for multi-release deployments." }
+        },
+        {
+          "@type": "Question",
+          "name": "Does StackForge AI support GitHub Actions pipeline generation?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. StackForge AI generates complete GitHub Actions CI/CD workflows with Trivy security scanning, auto-rollback on failure, DB migration steps before deploy, Lighthouse CI for frontend and Slack notifications." }
+        },
+        {
+          "@type": "Question",
+          "name": "Which clouds does the Terraform generator support?",
+          "acceptedAnswer": { "@type": "Answer", "text": "StackForge AI supports AWS (Terraform, CloudFormation, Terragrunt), Azure (Terraform, Bicep, ARM templates) and GCP (Terraform, Pulumi). Deploy targets include EKS, ECS, AKS, Cloud Run, GKE and EC2 Auto Scaling Groups." }
+        },
+        {
+          "@type": "Question",
+          "name": "Is there a free Terraform generator online?",
+          "acceptedAnswer": { "@type": "Answer", "text": "StackForge AI offers a $20/month subscription that covers unlimited Terraform, Ansible, Helm chart and CI/CD pipeline generation with all AI costs included. No separate API key is needed. A 30-day money-back guarantee is included." }
+        },
+        {
+          "@type": "Question",
+          "name": "Does StackForge AI generate Kubernetes YAML files?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. StackForge AI generates complete Kubernetes manifests — deployments, services, ingress, HPA, PodDisruptionBudgets, ConfigMaps, Secrets, RBAC, and ServiceAccounts — or full Helm charts for EKS, AKS and GKE." }
+        },
+        {
+          "@type": "Question",
+          "name": "Can StackForge AI generate SOC2 or HIPAA compliant infrastructure?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. StackForge AI includes compliance profiles for SOC2, PCI-DSS, HIPAA and ISO 27001 that add appropriate controls — encryption at rest and in transit, MFA enforcement, audit logging, network segmentation and WAF rules — directly into the generated Terraform and security baseline files." }
+        }
+      ]
+    }
+    </script>
+
+    <!-- ── Structured Data: WebSite + SearchAction ────────────────────── -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "StackForge AI",
+      "url": "https://stackforge-app.vercel.app",
+      "description": "Terraform generator, Ansible generator and DevOps stack builder powered by AI",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://stackforge-app.vercel.app/?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+
+    <!-- ── Preconnect for fonts ────────────────────────────────────────── -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <style>
+      /* Minimal styles for static HTML fallback — overridden by React */
+      #sf-static { font-family: system-ui, sans-serif; background: #080c12; color: #eef2f8; margin: 0; padding: 0; line-height: 1.6; }
+      #sf-static h1 { font-size: clamp(28px,5vw,64px); font-weight: 800; color: #eef2f8; margin: 0 0 16px; }
+      #sf-static h1 span { color: #f0a500; }
+      #sf-static h2 { font-size: clamp(20px,3vw,36px); font-weight: 700; margin: 40px 0 12px; color: #eef2f8; }
+      #sf-static h3 { font-size: 18px; font-weight: 600; color: #eef2f8; margin: 24px 0 8px; }
+      #sf-static p  { color: #8a9ab5; margin: 0 0 14px; max-width: 680px; }
+      #sf-static ul { color: #8a9ab5; padding-left: 20px; margin: 0 0 14px; }
+      #sf-static li { margin-bottom: 6px; }
+      #sf-static strong { color: #eef2f8; }
+      #sf-static a  { color: #f0a500; }
+      #sf-static .hero { padding: 80px 6vw 60px; max-width: 1280px; margin: 0 auto; }
+      #sf-static .section { padding: 60px 6vw; max-width: 1280px; margin: 0 auto; }
+      #sf-static .badge { display: inline-block; background: rgba(240,165,0,.1); border: 1px solid rgba(240,165,0,.3); color: #f0a500; padding: 4px 12px; border-radius: 4px; font-size: 12px; letter-spacing: .1em; margin-bottom: 20px; }
+      #sf-static .grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap: 20px; margin-top: 28px; }
+      #sf-static .card { background: #111927; border: 1px solid #1c2e46; border-radius: 10px; padding: 22px; }
+      #sf-static .faq { border-top: 1px solid #1c2e46; padding: 16px 0; }
+      #sf-static .cta { background: #f0a500; color: #000; display: inline-block; padding: 12px 28px; border-radius: 6px; font-weight: 700; text-decoration: none; margin: 8px 0; }
+      #sf-static nav { padding: 14px 6vw; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1c2e46; }
+      #sf-static footer { border-top: 1px solid #1c2e46; padding: 20px 6vw; color: #5a7394; font-size: 13px; }
+    </style>
   </head>
   <body>
+    <!--
+      STATIC PRE-RENDERED LANDING PAGE
+      This section is visible to search engine crawlers on first pass.
+      React mounts over this content — users always see the React version.
+      Do NOT remove — critical for Google indexing and SEO ranking.
+    -->
+    <div id="sf-static">
+      <nav>
+        <strong style="color:#f0a500;font-size:18px;letter-spacing:.06em">⚡ STACKFORGE AI</strong>
+        <a href="https://stackforge-app.vercel.app/" class="cta" style="padding:8px 18px;font-size:13px">SUBSCRIBE — $20/MO</a>
+      </nav>
+
+      <div class="hero">
+        <div class="badge">AI-POWERED · NO API KEY NEEDED · INSTANT DOWNLOAD</div>
+        <h1>The #1 <span>Terraform Generator</span>,<br>Ansible Generator &amp; DevOps Stack Builder</h1>
+        <p style="font-size:18px;max-width:620px">
+          Describe your app. Pick your cloud. Get <strong>complete Terraform modules, Helm charts, CI/CD pipelines,
+          Ansible playbooks, security baseline and SRE runbook</strong> — real folder structure, downloadable ZIP.
+          AWS, Azure and GCP. In 90 seconds.
+        </p>
+        <a href="https://stackforgeaiautomation.lemonsqueezy.com/checkout" class="cta">⚡ START GENERATING — $20/MONTH</a>
+        <p style="font-size:13px;margin-top:10px">30-day money-back guarantee · Cancel any time · All AI costs included</p>
+      </div>
+
+      <div class="section">
+        <h2>Free Terraform Generator — AWS, Azure &amp; GCP</h2>
+        <p>
+          StackForge AI is the most comprehensive <strong>Terraform generator</strong> available online.
+          It creates production-ready, modular Terraform projects with remote state, DynamoDB locking, and a
+          full module hierarchy — networking, compute, database, storage and IAM — following HashiCorp best practices.
+          Every resource identifier uses the exact names you specify, appearing in every module, output, tag and security group rule.
+        </p>
+        <div class="grid">
+          <div class="card">
+            <h3>🏗️ Terraform Module Generator</h3>
+            <p>Complete Terraform modules for AWS VPC, EKS, ECS Fargate, RDS Aurora, S3, CloudFront, WAF, KMS, Secrets Manager and IAM. Also: Terragrunt multi-env, CloudFormation, Azure Bicep, ARM, and Pulumi.</p>
+            <ul>
+              <li><strong>AWS Terraform generator</strong> — 80+ services supported</li>
+              <li><strong>Azure Terraform / Bicep generator</strong> — AKS, App Gateway, Key Vault</li>
+              <li><strong>GCP Terraform generator</strong> — GKE, Cloud SQL, Cloud Armor</li>
+              <li><strong>Terraform validate built-in</strong> — Makefile runs before every plan</li>
+              <li>Module output chaining — no hardcoded IDs anywhere</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>📋 Ansible Playbook Generator</h3>
+            <p>Full Ansible roles for 60+ software presets — nginx, Apache, Docker, Redis, PostgreSQL, MySQL, MongoDB, Certbot, Fail2ban, SSH hardening, UFW, SELinux, Prometheus, Grafana, Node Exporter, and more.</p>
+            <ul>
+              <li>Idempotent tasks — safe to run multiple times</li>
+              <li>Multi-distro: Debian + RHEL (Ubuntu, CentOS, Amazon Linux)</li>
+              <li>systemd handlers — proper service management</li>
+              <li>Jinja2 config templates — per-environment variables</li>
+              <li>Ansible Galaxy requirements.yml included</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>⎈ Helm Chart Generator</h3>
+            <p>18-file Helm chart for EKS, AKS and GKE — values-dev.yaml, values-prod.yaml, HPA, PodDisruptionBudget, RBAC, ExternalSecrets operator integration, and helmfile for multi-release deployments.</p>
+            <ul>
+              <li>EKS Helm chart with IRSA service accounts</li>
+              <li>AKS Helm chart with Workload Identity</li>
+              <li>GKE Helm chart with Workload Identity Federation</li>
+              <li>Ingress with cert-manager annotations</li>
+              <li>Kubernetes YAML manifests as alternative</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>🔁 CI/CD Pipeline Generator</h3>
+            <p>Separate frontend + backend pipelines with Trivy security scanning, auto-rollback, DB migration before deploy, Lighthouse CI for frontend and Slack notifications.</p>
+            <ul>
+              <li><strong>GitHub Actions pipeline generator</strong></li>
+              <li><strong>GitLab CI pipeline generator</strong></li>
+              <li>Azure DevOps pipelines</li>
+              <li>Jenkins Jenkinsfile generator</li>
+              <li>AWS CodePipeline + Bitbucket Pipelines</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>📊 Observability Stack Generator</h3>
+            <p>Prometheus + Grafana + Loki + Jaeger + OpenTelemetry Collector. Pre-built dashboards for latency, error rate, SLO burn rate. Alert rules for CPU, memory, disk, p99 latency.</p>
+            <ul>
+              <li>Prometheus alert rules (CPU, error rate, SLO)</li>
+              <li>Grafana dashboards as JSON</li>
+              <li>Loki + Promtail log aggregation</li>
+              <li>Jaeger distributed tracing</li>
+              <li>kube-prometheus-stack Helm values for K8s</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>🔐 Security Baseline Generator</h3>
+            <p>Least-privilege IAM policies, CIS Benchmark 20-point checklist, SOC2 CC6/CC7/CC8 mappings, PCI-DSS v4.0 controls, HIPAA encryption requirements and ISO 27001 Annex A.</p>
+            <ul>
+              <li>CIS Benchmark compliance checklist</li>
+              <li><strong>SOC2 compliant Terraform</strong></li>
+              <li><strong>HIPAA compliant infrastructure code</strong></li>
+              <li><strong>PCI-DSS Terraform generator</strong></li>
+              <li>HashiCorp Vault secrets management config</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>🔑 Secrets Management</h3>
+            <p>HashiCorp Vault configuration, External Secrets Operator CRDs, SealedSecrets for GitOps, automated DB credential rotation scripts and secrets audit tooling.</p>
+            <ul>
+              <li>AWS Secrets Manager + SSM setup scripts</li>
+              <li>Azure Key Vault integration</li>
+              <li>GCP Secret Manager configuration</li>
+              <li>Vault policies per microservice</li>
+              <li>Zero-downtime DB credential rotation</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>📋 SRE Runbook Generator</h3>
+            <p>ASCII architecture diagram, Day-2 operations commands, incident response playbook for 7 failure scenarios (service down, DB errors, cache failure, high CPU, pipeline failure), monthly cost estimate and DR plan.</p>
+            <ul>
+              <li>Per-named-resource CLI commands</li>
+              <li>RTO/RPO targets and DR steps</li>
+              <li>Monthly cost estimate (dev vs prod)</li>
+              <li>Rollback procedures</li>
+              <li>On-call escalation paths</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" style="background:#0d1420;border-top:1px solid #1c2e46;border-bottom:1px solid #1c2e46;max-width:100%;padding:60px 6vw">
+        <div style="max-width:1280px;margin:0 auto">
+          <h2>How the Terraform Generator Works</h2>
+          <ol style="color:#8a9ab5;max-width:680px;padding-left:20px">
+            <li style="margin-bottom:12px"><strong>Describe your application</strong> — one sentence about what you're building. Pick cloud provider, IaC tool, CI/CD pipeline and compliance profile.</li>
+            <li style="margin-bottom:12px"><strong>Select cloud resources</strong> — search 279 cloud services (AWS, Azure, GCP). Type real names like <code style="color:#00c2d4;background:#0a1628;padding:1px 6px;border-radius:3px">eks-prod</code> or <code style="color:#00c2d4;background:#0a1628;padding:1px 6px;border-radius:3px">aurora-main</code> — these appear in every generated file.</li>
+            <li style="margin-bottom:12px"><strong>Preview architecture</strong> — live architecture diagram and estimated monthly cost before you generate.</li>
+            <li style="margin-bottom:12px"><strong>Generate and download</strong> — all 8 sections generated in parallel. Download as ZIP with real folder structure, or push directly to GitHub.</li>
+          </ol>
+
+          <h2>Supported IaC Tools</h2>
+          <p>StackForge AI is the only DevOps generator that supports all major Infrastructure as Code tools in one place:</p>
+          <ul>
+            <li><strong>Terraform generator</strong> — modular, with remote state, Makefile and smoke tests</li>
+            <li><strong>Terragrunt generator</strong> — DRY multi-environment live configuration</li>
+            <li><strong>CloudFormation generator</strong> — AWS-native nested stacks with cross-stack imports</li>
+            <li><strong>Azure Bicep generator</strong> — Bicep modules with parameter files for dev and prod</li>
+            <li><strong>ARM template generator</strong> — Azure JSON native templates</li>
+            <li><strong>Pulumi generator</strong> — TypeScript multi-cloud with StackReferences</li>
+          </ul>
+
+          <h2>Supported CI/CD Pipeline Generators</h2>
+          <ul>
+            <li><strong>GitHub Actions generator</strong> — multi-stage with Trivy scans and auto-rollback</li>
+            <li><strong>GitLab CI generator</strong> — with manual production approval stage</li>
+            <li><strong>Azure Pipelines generator</strong> — with variable groups and library setup</li>
+            <li><strong>Jenkins pipeline generator</strong> — Declarative Jenkinsfile</li>
+            <li><strong>AWS CodePipeline generator</strong> — buildspec + codepipeline JSON</li>
+            <li><strong>Bitbucket Pipelines generator</strong> — with deployment environments</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Frequently Asked Questions</h2>
+        <div class="faq">
+          <h3>What is the best free Terraform generator online?</h3>
+          <p>StackForge AI is one of the most comprehensive Terraform generators available. It generates complete modular Terraform projects for AWS, Azure and GCP — not just single resource snippets, but full projects with networking, compute, database, storage, IAM, security, observability and CI/CD pipelines, all tied together with proper module output chaining.</p>
+        </div>
+        <div class="faq">
+          <h3>How do I automatically generate Ansible playbooks?</h3>
+          <p>StackForge AI generates complete Ansible roles for 60+ software presets. Each role includes tasks/main.yml (idempotent install + config + verify), handlers/main.yml, defaults/main.yml, a Jinja2 config template, and meta/main.yml. Roles are multi-distro (Debian and RHEL) and compatible with --check mode.</p>
+        </div>
+        <div class="faq">
+          <h3>Can I generate Helm charts for EKS, AKS and GKE automatically?</h3>
+          <p>Yes. StackForge AI generates 18-file Helm charts that include Chart.yaml, values.yaml, values-dev.yaml, values-prod.yaml, helmfile.yaml, deployment templates for frontend and backend, service templates, ingress with cert-manager, HPA, PodDisruptionBudget, ConfigMap, Secret, RBAC and ServiceAccount manifests.</p>
+        </div>
+        <div class="faq">
+          <h3>Does the generated Terraform code actually work?</h3>
+          <p>Yes. Every Terraform output includes a Makefile that runs <code style="color:#00c2d4">terraform validate</code> and <code style="color:#00c2d4">terraform fmt -check</code> before any plan. The code uses proper module structure with explicit output→input chaining — no hardcoded IDs anywhere. Ready to <code style="color:#00c2d4">terraform init &amp;&amp; make plan</code> after setting provider credentials.</p>
+        </div>
+        <div class="faq">
+          <h3>Do I need an Anthropic or OpenAI API key?</h3>
+          <p>No. Your $20/month subscription covers all AI generation costs. StackForge AI uses its own API key on the server — you never see or manage one. Just log in and generate unlimited infrastructure code.</p>
+        </div>
+        <div class="faq">
+          <h3>Which compliance frameworks are supported?</h3>
+          <p>StackForge AI supports SOC 2 (CC6/CC7/CC8), PCI-DSS v4.0, HIPAA (PHI encryption + audit logs), and ISO 27001 (Annex A controls). Selecting a compliance profile adds appropriate controls directly into the generated Terraform, security baseline, IAM policies and network configurations.</p>
+        </div>
+        <div class="faq">
+          <h3>What is the difference between a Terraform generator and Terraform templates?</h3>
+          <p>Terraform templates are static, generic snippets you copy and paste. A Terraform generator like StackForge AI creates a complete, interconnected project customized to your exact infrastructure — using your actual resource names, your cloud, your deploy target, and your compliance requirements. The result is ready to run, not just a starting point.</p>
+        </div>
+      </div>
+
+      <div class="section" style="background:#0d1420;border-top:1px solid #1c2e46;max-width:100%;padding:60px 6vw">
+        <div style="max-width:880px;margin:0 auto">
+          <h2 style="text-align:center">Simple, Flat Pricing</h2>
+          <p style="text-align:center">All AI generation costs included. No API key. Cancel any time.</p>
+          <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr));margin-top:32px">
+            <div class="card">
+              <div style="font-size:13px;color:#8a9ab5;margin-bottom:6px">INDIVIDUAL</div>
+              <div style="font-size:48px;font-weight:800;color:#eef2f8;line-height:1">$20<span style="font-size:16px;color:#8a9ab5">/mo</span></div>
+              <ul style="margin-top:14px">
+                <li>All 8 output sections</li>
+                <li>279 cloud services</li>
+                <li>AWS + Azure + GCP</li>
+                <li>Terraform, Helm, Ansible, CI/CD</li>
+                <li>Download as ZIP</li>
+                <li>Push to GitHub</li>
+                <li>50 generations/day</li>
+              </ul>
+              <a href="https://stackforgeaiautomation.lemonsqueezy.com/checkout" class="cta" style="display:block;text-align:center;margin-top:16px">SUBSCRIBE →</a>
+            </div>
+            <div class="card" style="border-color:#f0a500">
+              <div style="font-size:13px;color:#f0a500;margin-bottom:6px;font-weight:700">★ MOST POPULAR · TEAM</div>
+              <div style="font-size:48px;font-weight:800;color:#eef2f8;line-height:1">$49<span style="font-size:16px;color:#8a9ab5">/mo</span></div>
+              <div style="font-size:12px;color:#8a9ab5;margin-bottom:4px">5 seats · AI included</div>
+              <ul style="margin-top:14px">
+                <li>Everything in Individual</li>
+                <li>5 team members</li>
+                <li>200 generations/day</li>
+                <li>Shared stack history</li>
+                <li>Priority support</li>
+              </ul>
+              <a href="https://stackforgeaiautomation.lemonsqueezy.com/checkout" class="cta" style="display:block;text-align:center;margin-top:16px">SUBSCRIBE — $49/MO</a>
+            </div>
+            <div class="card">
+              <div style="font-size:13px;color:#8a9ab5;margin-bottom:6px">AGENCY</div>
+              <div style="font-size:48px;font-weight:800;color:#eef2f8;line-height:1">$149<span style="font-size:16px;color:#8a9ab5">/mo</span></div>
+              <div style="font-size:12px;color:#8a9ab5;margin-bottom:4px">Unlimited seats · AI included</div>
+              <ul style="margin-top:14px">
+                <li>Everything in Team</li>
+                <li>Unlimited seats</li>
+                <li>Unlimited generations</li>
+                <li>White-label branding</li>
+                <li>Invoice billing</li>
+              </ul>
+              <a href="https://stackforgeaiautomation.lemonsqueezy.com/checkout" class="cta" style="display:block;text-align:center;margin-top:16px">SUBSCRIBE →</a>
+            </div>
+          </div>
+          <p style="text-align:center;margin-top:20px;font-size:13px">30-day money-back guarantee · No API key · Cancel any time</p>
+        </div>
+      </div>
+
+      <footer>
+        <p>© 2026 StackForge AI — AI-powered Terraform generator, Ansible generator and DevOps stack builder for AWS, Azure and GCP.</p>
+        <p>
+          <a href="#" style="color:#8a9ab5;margin-right:16px">Terraform Generator</a>
+          <a href="#" style="color:#8a9ab5;margin-right:16px">Ansible Playbook Generator</a>
+          <a href="#" style="color:#8a9ab5;margin-right:16px">Helm Chart Generator</a>
+          <a href="#" style="color:#8a9ab5;margin-right:16px">Kubernetes YAML Generator</a>
+          <a href="#" style="color:#8a9ab5;margin-right:16px">GitHub Actions Generator</a>
+          <a href="mailto:sauvikpaul593@gmail.com" style="color:#8a9ab5">Support</a>
+        </p>
+      </footer>
+    </div>
+    <!-- END STATIC PRE-RENDERED CONTENT -->
+
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

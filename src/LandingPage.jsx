@@ -2,27 +2,22 @@ import { useState, useEffect } from 'react'
 
 function SEOMeta() {
   useEffect(() => {
-    document.title = 'StackForge AI — Generate Terraform, Helm & Ansible in 90 Seconds'
+    document.title = 'StackForge AI — Terraform Generator, Ansible Generator & DevOps Stack Builder'
     const setMeta = (name, content, prop) => {
       let el = document.querySelector(prop ? `meta[property="${name}"]` : `meta[name="${name}"]`)
       if (!el) { el = document.createElement('meta'); if (prop) el.setAttribute('property', name); else el.setAttribute('name', name); document.head.appendChild(el) }
       el.setAttribute('content', content)
     }
-    setMeta('description', 'StackForge AI generates production-ready Terraform modules, Helm charts, GitHub Actions pipelines, Ansible playbooks, security baseline and SRE runbooks for AWS, Azure and GCP. Subscribe and download as ZIP instantly.')
-    setMeta('keywords', 'terraform generator, helm chart generator, ansible playbook generator, devops automation, infrastructure as code generator, kubernetes yaml generator, github actions pipeline generator, aws terraform modules, eks helm chart, terraform module generator, iac automation, devops stack generator')
+    setMeta('description', 'Generate production-ready Terraform modules, Helm charts, Ansible playbooks, GitHub Actions pipelines, security baselines and SRE runbooks for AWS, Azure & GCP in 90 seconds. No API key required.')
+    setMeta('keywords', 'terraform generator, terraform code generator, terraform module generator, ansible generator, ansible playbook generator, helm chart generator, kubernetes yaml generator, github actions generator, gitlab ci generator, devops automation, infrastructure as code generator, iac generator, aws terraform modules, azure bicep generator, gcp terraform, eks helm chart, aks helm chart, gke helm chart, terragrunt generator, cloudformation generator, pulumi generator, ci cd pipeline generator, jenkins pipeline generator, devops stack generator, cloud infrastructure generator, kubernetes manifest generator, prometheus grafana stack, observability stack generator, sre runbook generator, cis benchmark automation, soc2 compliance iac, hipaa pci terraform, secrets management vault, ai devops tool, free terraform template')
     setMeta('og:title', 'StackForge AI — Generate Your Entire DevOps Stack in 90 Seconds', true)
-    setMeta('og:description', 'Terraform modules, Helm charts, CI/CD pipelines, Ansible playbooks, security baseline + runbook. Real folder structure, downloadable ZIP. $20/month.', true)
+    setMeta('og:description', 'Terraform modules, Helm charts, Ansible playbooks, CI/CD pipelines, security baseline + SRE runbook. Real folder structure, downloadable ZIP. AWS, Azure & GCP. $20/month, AI included.', true)
     setMeta('og:type', 'website', true)
-    let sd = document.getElementById('sf-sd')
-    if (!sd) { sd = document.createElement('script'); sd.id = 'sf-sd'; sd.type = 'application/ld+json'; document.head.appendChild(sd) }
-    sd.textContent = JSON.stringify({
-      "@context": "https://schema.org", "@type": "SoftwareApplication",
-      "name": "StackForge AI",
-      "description": "AI-powered DevOps stack generator for Terraform, Helm, Ansible, CI/CD pipelines and security baselines",
-      "applicationCategory": "DeveloperApplication",
-      "offers": { "@type": "Offer", "price": "20", "priceCurrency": "USD" },
-      "featureList": ["Terraform module generator","Helm chart generator","Ansible playbook generator","Kubernetes YAML generator","GitHub Actions pipeline generator"]
-    })
+    setMeta('og:url', 'https://stackforge-app.vercel.app/', true)
+    setMeta('og:image', 'https://stackforge-app.vercel.app/og-image.png', true)
+    setMeta('twitter:card', 'summary_large_image')
+    setMeta('twitter:title', 'StackForge AI — Terraform Generator + Ansible Generator + Helm Chart Generator')
+    setMeta('twitter:description', 'Generate production-ready Terraform, Ansible, Helm charts, CI/CD pipelines and SRE runbooks for AWS/Azure/GCP in 90 seconds. No API key.')
   }, [])
   return null
 }
@@ -479,7 +474,7 @@ export default function LandingPage({ onSignIn }) {
 
       {/* FOOTER */}
       <footer style={{borderTop:`1px solid ${B}`,padding:'22px 6vw',display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:12}}>
-        <span style={{...mono,fontSize:11,color:M}}>© 2025 StackForge AI — AI-powered DevOps stack generator</span>
+        <span style={{...mono,fontSize:11,color:M}}>© {new Date().getFullYear()} StackForge AI — AI-powered DevOps stack generator</span>
         <div style={{display:'flex',gap:22,flexWrap:'wrap'}}>
           {[['#features','Features'],['#pricing','Pricing'],['#faq','FAQ'],['mailto:sauvikpaul593@gmail.com','Support']].map(([href,label])=>(
             <a key={label} href={href} style={{...mono,fontSize:11,color:M,textDecoration:'none'}}>{label}</a>

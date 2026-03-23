@@ -111,10 +111,12 @@ const PRESETS=[
    gcp:[{id:"gke_cluster",cat:"Compute",n:1,names:["gke-prod"]},{id:"http_lb",cat:"Network",n:1,names:["lb-prod"]},{id:"cloud_nat",cat:"Network",n:2,names:["nat-1","nat-2"]},{id:"cloud_sql_pg",cat:"Database",n:1,names:["db-prod"]},{id:"memorystore_r",cat:"Database",n:1,names:["cache-prod"]},{id:"gcs_bucket",cat:"Storage",n:2,names:["assets","backups"]},{id:"cloud_armor",cat:"Security",n:1,names:["armor-prod"]}]},
   {id:"production",label:"Production", icon:"⚡",desc:"Multi-AZ, full security, observability",
    aws:[{id:"eks_cluster",cat:"Compute",n:2,names:["eks-prod","eks-staging"]},{id:"alb",cat:"Network",n:2,names:["alb-ext","alb-int"]},{id:"nat_gateway",cat:"Network",n:3,names:["nat-az1","nat-az2","nat-az3"]},{id:"aurora_pg",cat:"Database",n:1,names:["aurora-prod"]},{id:"elasticache_r",cat:"Database",n:2,names:["cache-prod","cache-staging"]},{id:"s3",cat:"Storage",n:3,names:["assets","backups","logs"]},{id:"cloudfront",cat:"Network",n:1,names:["cdn-prod"]},{id:"waf",cat:"Security",n:1,names:["waf-prod"]},{id:"guard_duty",cat:"Security",n:1,names:["gd-prod"]},{id:"kms",cat:"Security",n:2,names:["kms-app","kms-logs"]},{id:"secrets_mgr",cat:"Security",n:1,names:["prod-secrets"]},{id:"cloudwatch",cat:"Monitoring",n:1,names:["cw-prod"]}],
-   azure:[],gcp:[]},
+   azure:[{id:"aks_cluster",cat:"Compute",n:2,names:["aks-prod","aks-staging"]},{id:"app_gateway",cat:"Network",n:2,names:["agw-ext","agw-int"]},{id:"az_nat",cat:"Network",n:3,names:["nat-az1","nat-az2","nat-az3"]},{id:"pg_flexible",cat:"Database",n:1,names:["db-prod"]},{id:"redis_cache",cat:"Database",n:2,names:["cache-prod","cache-staging"]},{id:"blob_storage",cat:"Storage",n:3,names:["assets","backups","logs"]},{id:"front_door",cat:"Network",n:1,names:["afd-prod"]},{id:"key_vault",cat:"Security",n:2,names:["kv-app","kv-logs"]},{id:"defender",cat:"Security",n:1,names:["defender-prod"]},{id:"log_analytics",cat:"Monitoring",n:1,names:["law-prod"]}],
+   gcp:[{id:"gke_cluster",cat:"Compute",n:2,names:["gke-prod","gke-staging"]},{id:"http_lb",cat:"Network",n:2,names:["lb-ext","lb-int"]},{id:"cloud_nat",cat:"Network",n:3,names:["nat-1","nat-2","nat-3"]},{id:"cloud_sql_pg",cat:"Database",n:1,names:["db-prod"]},{id:"memorystore_r",cat:"Database",n:2,names:["cache-prod","cache-staging"]},{id:"gcs_bucket",cat:"Storage",n:3,names:["assets","backups","logs"]},{id:"cloud_cdn",cat:"Network",n:1,names:["cdn-prod"]},{id:"cloud_armor",cat:"Security",n:1,names:["armor-prod"]},{id:"secret_mgr",cat:"Security",n:1,names:["secrets-prod"]},{id:"cloud_mon",cat:"Monitoring",n:1,names:["monitoring-prod"]}]},
   {id:"enterprise", label:"Enterprise",icon:"🏢",desc:"Multi-region DR, compliance-ready",
    aws:[{id:"eks_cluster",cat:"Compute",n:2,names:["eks-primary","eks-dr"]},{id:"alb",cat:"Network",n:4,names:["alb-ext-primary","alb-int-primary","alb-ext-dr","alb-int-dr"]},{id:"nat_gateway",cat:"Network",n:4,names:["nat-p-az1","nat-p-az2","nat-dr-az1","nat-dr-az2"]},{id:"aurora_pg",cat:"Database",n:2,names:["aurora-primary","aurora-dr"]},{id:"elasticache_r",cat:"Database",n:2,names:["cache-primary","cache-dr"]},{id:"s3",cat:"Storage",n:4,names:["assets","backups","logs","dr-backups"]},{id:"cloudfront",cat:"Network",n:2,names:["cdn-global","cdn-failover"]},{id:"waf",cat:"Security",n:2,names:["waf-primary","waf-dr"]},{id:"guard_duty",cat:"Security",n:1,names:["gd-global"]},{id:"security_hub",cat:"Security",n:1,names:["sh-global"]},{id:"kms",cat:"Security",n:3,names:["kms-primary","kms-dr","kms-logs"]},{id:"secrets_mgr",cat:"Security",n:2,names:["prod-secrets","dr-secrets"]},{id:"cloudwatch",cat:"Monitoring",n:1,names:["cw-prod"]},{id:"cloudtrail",cat:"Monitoring",n:1,names:["trail-prod"]}],
-   azure:[],gcp:[]},
+   azure:[{id:"aks_cluster",cat:"Compute",n:2,names:["aks-primary","aks-dr"]},{id:"app_gateway",cat:"Network",n:4,names:["agw-ext-primary","agw-int-primary","agw-ext-dr","agw-int-dr"]},{id:"az_nat",cat:"Network",n:4,names:["nat-p-az1","nat-p-az2","nat-dr-az1","nat-dr-az2"]},{id:"pg_flexible",cat:"Database",n:2,names:["db-primary","db-dr"]},{id:"redis_cache",cat:"Database",n:2,names:["cache-primary","cache-dr"]},{id:"blob_storage",cat:"Storage",n:4,names:["assets","backups","logs","dr-backups"]},{id:"front_door",cat:"Network",n:2,names:["afd-global","afd-failover"]},{id:"key_vault",cat:"Security",n:3,names:["kv-primary","kv-dr","kv-logs"]},{id:"defender",cat:"Security",n:1,names:["defender-global"]},{id:"sentinel",cat:"Security",n:1,names:["sentinel-global"]},{id:"log_analytics",cat:"Monitoring",n:1,names:["law-prod"]},{id:"az_monitor",cat:"Monitoring",n:1,names:["monitor-prod"]}],
+   gcp:[{id:"gke_cluster",cat:"Compute",n:2,names:["gke-primary","gke-dr"]},{id:"http_lb",cat:"Network",n:4,names:["lb-ext-primary","lb-int-primary","lb-ext-dr","lb-int-dr"]},{id:"cloud_nat",cat:"Network",n:4,names:["nat-p-1","nat-p-2","nat-dr-1","nat-dr-2"]},{id:"cloud_sql_pg",cat:"Database",n:2,names:["db-primary","db-dr"]},{id:"memorystore_r",cat:"Database",n:2,names:["cache-primary","cache-dr"]},{id:"gcs_bucket",cat:"Storage",n:4,names:["assets","backups","logs","dr-backups"]},{id:"cloud_cdn",cat:"Network",n:2,names:["cdn-global","cdn-failover"]},{id:"cloud_armor",cat:"Security",n:2,names:["armor-primary","armor-dr"]},{id:"secret_mgr",cat:"Security",n:2,names:["secrets-primary","secrets-dr"]},{id:"cloud_mon",cat:"Monitoring",n:1,names:["monitoring-global"]},{id:"cloud_log",cat:"Monitoring",n:1,names:["logging-global"]}]},
 ];
 
 // ─── Compliance profiles ──────────────────────────────────────────────────
@@ -1475,29 +1477,48 @@ function GitHubModal({outputs,appSlug,onClose}){
 
   const push=async()=>{
     if(!token.trim()){setStatus("❌ Enter a GitHub Personal Access Token first");return;}
-    setPushing(true);setStatus("Authenticating…");
+    if(!repoName.trim()){setStatus("❌ Repository name cannot be empty");return;}
+    // Validate repo name matches GitHub rules
+    if(!/^[a-zA-Z0-9._-]+$/.test(repoName)){setStatus("❌ Repo name can only contain letters, numbers, hyphens, underscores and dots");return;}
+
+    setPushing(true);setStatus("Authenticating with GitHub…");
     try{
-      const userRes=await fetch("https://api.github.com/user",{headers:{Authorization:"token "+token}});
-      if(!userRes.ok)throw new Error("Invalid token — check it has 'repo' scope");
+      // 1. Verify token & get username
+      const userRes=await fetch("https://api.github.com/user",{headers:{Authorization:"token "+token,"User-Agent":"StackForge-AI"}});
+      if(userRes.status===401)throw new Error("Invalid token or expired — ensure it has 'repo' scope at github.com/settings/tokens");
+      if(!userRes.ok)throw new Error(`GitHub auth error (${userRes.status}). Check your token.`);
       const user=await userRes.json();
-      setStatus("Creating repo "+repoName+"…");
-      const repoRes=await fetch("https://api.github.com/user/repos",{method:"POST",headers:{Authorization:"token "+token,"Content-Type":"application/json"},body:JSON.stringify({name:repoName,private:isPrivate,auto_init:false,description:"Generated by StackForge AI"})});
-      if(!repoRes.ok){const e=await repoRes.json();throw new Error(e.message||"Repo creation failed");}
+
+      // 2. Check if repo already exists
+      setStatus(`Creating repo ${user.login}/${repoName}…`);
+      const checkRes=await fetch(`https://api.github.com/repos/${user.login}/${repoName}`,{headers:{Authorization:"token "+token,"User-Agent":"StackForge-AI"}});
+      if(checkRes.ok)throw new Error(`Repo "${user.login}/${repoName}" already exists. Choose a different name.`);
+
+      // 3. Create the repo
+      const repoRes=await fetch("https://api.github.com/user/repos",{method:"POST",headers:{Authorization:"token "+token,"Content-Type":"application/json","User-Agent":"StackForge-AI"},body:JSON.stringify({name:repoName,private:isPrivate,auto_init:false,description:"Generated by StackForge AI — stackforge-app.vercel.app"})});
+      if(repoRes.status===422){const e=await repoRes.json();throw new Error(e.errors?.[0]?.message||"Repository name already taken or invalid");}
+      if(!repoRes.ok){const e=await repoRes.json();throw new Error(e.message||`Repo creation failed (${repoRes.status})`);}
+
+      // 4. Push files one by one
       const allFiles=Object.values(outputs).flatMap(t=>parseFiles(t||""));
+      if(allFiles.length===0)throw new Error("No files to push — generate some sections first");
       let pushed=0;
       for(const {path,content} of allFiles){
-        // base64 encode content
         const bytes=new TextEncoder().encode(content);
         let bin="";for(let i=0;i<bytes.length;i+=8192)bin+=String.fromCharCode(...bytes.subarray(i,Math.min(i+8192,bytes.length)));
         const b64=btoa(bin);
-        const r=await fetch(`https://api.github.com/repos/${user.login}/${repoName}/contents/${path}`,{method:"PUT",headers:{Authorization:"token "+token,"Content-Type":"application/json"},body:JSON.stringify({message:"Add "+path,content:b64})});
-        if(!r.ok){const e=await r.json();throw new Error("Push failed for "+path+": "+e.message);}
+        const r=await fetch(`https://api.github.com/repos/${user.login}/${repoName}/contents/${path}`,{method:"PUT",headers:{Authorization:"token "+token,"Content-Type":"application/json","User-Agent":"StackForge-AI"},body:JSON.stringify({message:`chore: add ${path}`,content:b64})});
+        if(!r.ok){const e=await r.json();throw new Error(`Push failed for ${path}: ${e.message||r.status}`);}
         pushed++;
-        setStatus(`Pushing files… ${pushed}/${allFiles.length}: ${path.split("/").pop()}`);
+        setStatus(`Pushing files… ${pushed}/${allFiles.length} — ${path.split("/").pop()}`);
       }
-      setStatus("✅ Done! "+allFiles.length+" files pushed");
+      setStatus(`✅ Done! ${allFiles.length} files pushed to github.com/${user.login}/${repoName}`);
       setDone(true);
-    }catch(e){setStatus("❌ "+e.message);}
+    }catch(e){
+      const msg=e.message||"Unknown error";
+      setStatus("❌ "+msg);
+      console.error("[GitHubPush]",msg);
+    }
     setPushing(false);
   };
 
