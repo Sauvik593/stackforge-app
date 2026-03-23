@@ -1,11 +1,13 @@
 {
   "rewrites": [
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/((?!.*\\.).+)", "destination": "/index.html" }
   ],
   "functions": {
-    "api/claude.js": { "maxDuration": 60 },
-    "api/webhook.js": { "maxDuration": 30 }
+    "api/claude.js":   { "maxDuration": 60 },
+    "api/webhook.js":  { "maxDuration": 30 },
+    "api/sitemap.js":  { "maxDuration": 5  }
   },
   "headers": [
     {
