@@ -1,9 +1,7 @@
 {
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
-    { "source": "/robots.txt", "destination": "/robots.txt" },
-    { "source": "/((?!sitemap.xml|robots.txt|favicon|assets).*)", "destination": "/index.html" }
+    { "source": "/((?!.*\\.).+)", "destination": "/index.html" }
   ],
   "functions": {
     "api/claude.js": { "maxDuration": 60 },
