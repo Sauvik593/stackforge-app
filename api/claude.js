@@ -11,7 +11,7 @@ const supabase = createClient(
 )
 
 const SESSION_WINDOW_MINUTES = 15
-const DAILY_CALL_LIMIT = 50
+const DAILY_CALL_LIMIT = parseInt(process.env.DAILY_CALL_LIMIT || '100')
 
 function getAllowedOrigin() {
   if (process.env.ALLOWED_ORIGIN) return process.env.ALLOWED_ORIGIN
