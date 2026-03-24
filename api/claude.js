@@ -113,8 +113,9 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   // ── Validate AI provider config ────────────────────────────────────────────
-  const useAnthropic = !!process.env.ANTHROPIC_API_KEY
+  // Gemini takes priority when set (free tier). Anthropic only used if no Gemini key.
   const useGemini = !!process.env.GEMINI_API_KEY
+  const useAnthropic = !useGemini && !!process.env.ANTHROPIC_API_KEY
   if (!useAnthropic && !useGemini) {
     console.error('[Config] Neither ANTHROPIC_API_KEY nor GEMINI_API_KEY is set')
     return res.status(500).json({ error: 'Server configuration error. Contact support.' })
