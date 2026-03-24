@@ -121,7 +121,7 @@ const PRESETS=[
 
 // ─── Compliance profiles ──────────────────────────────────────────────────
 const COMPLIANCE=[
-  {id:"",       label:"None",      color:"#475569",extra:""},
+  {id:"",       label:"None",      color:"#64748b",extra:""},
   {id:"soc2",   label:"SOC 2",     color:"#3b82f6",extra:"Enforce SOC 2 CC6/CC7/CC8 controls: MFA on all accounts, encrypted at rest and in transit, access logging, principle of least privilege, quarterly access reviews."},
   {id:"pci",    label:"PCI-DSS",   color:"#ef4444",extra:"Enforce PCI-DSS v4.0: network segmentation (cardholder data environment isolated), TLS 1.2+ only, log all access to cardholder data, WAF required, vulnerability scanning, no default credentials, tokenize card data."},
   {id:"hipaa",  label:"HIPAA",     color:"#10b981",extra:"Enforce HIPAA: PHI encrypted at rest (AES-256) and in transit (TLS 1.2+), audit logs for all PHI access, automatic session timeout, BAA required for all services, no PHI in logs."},
@@ -793,6 +793,7 @@ Separate dev (auto on develop branch) vs prod (manual approval on main).`
     stack:{system:SYS,user:
 `Generate application stack for: ${f.appDescription||"web application"} on ${CN[f.cloud]}.
 Deploy: ${f.deployTarget||"container"} ${isHelm?"(Helm)":isEC2Like?"(EC2 + systemd/Docker Compose on instances)":""}. Microservices: ${SS}
+${isEC2Like?`CRITICAL: This is a VM/EC2 deployment. Do NOT generate any Helm charts, helmfile.yaml, Chart.yaml, values.yaml, or Kubernetes manifests (no .yaml k8s files). Generate EC2/VM deployment files ONLY (scripts, systemd units, nginx config, docker-compose).`:""}
 
 Required files:
 - Dockerfile.frontend (multi-stage: node build → nginx, non-root, HEALTHCHECK)
@@ -1006,7 +1007,7 @@ function FileTree({tree,selectedPath,onSelect,depth=0}){
   return <div>{entries.map(([name,node])=>{
     if(node.__file){const active=selectedPath===node.path;return <div key={name} onClick={()=>onSelect(node)} style={{display:"flex",alignItems:"center",gap:5,padding:`3px 6px 3px ${8+depth*13}px`,cursor:"pointer",borderRadius:4,marginBottom:1,background:active?"#0f2944":"transparent",color:active?"#38bdf8":"#94a3b8",fontSize:11,fontFamily:"JetBrains Mono",borderLeft:active?"2px solid #38bdf8":"2px solid transparent"}}><span style={{fontSize:10}}>{fileIcon(name)}</span><span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</span></div>;}
     const isOpen=open[name]!==false;
-    return <div key={name}><div onClick={()=>setOpen(o=>({...o,[name]:!isOpen}))} style={{display:"flex",alignItems:"center",gap:5,padding:`3px 6px 3px ${8+depth*13}px`,cursor:"pointer",color:"#7dd3fc",fontSize:11,fontFamily:"JetBrains Mono",fontWeight:600,userSelect:"none"}}><span style={{fontSize:9,color:"#475569",minWidth:9}}>{isOpen?"▾":"▸"}</span><span>📁</span><span>{name}</span></div>{isOpen&&<FileTree tree={node} selectedPath={selectedPath} onSelect={onSelect} depth={depth+1}/>}</div>;
+    return <div key={name}><div onClick={()=>setOpen(o=>({...o,[name]:!isOpen}))} style={{display:"flex",alignItems:"center",gap:5,padding:`3px 6px 3px ${8+depth*13}px`,cursor:"pointer",color:"#7dd3fc",fontSize:11,fontFamily:"JetBrains Mono",fontWeight:600,userSelect:"none"}}><span style={{fontSize:9,color:"#64748b",minWidth:9}}>{isOpen?"▾":"▸"}</span><span>📁</span><span>{name}</span></div>{isOpen&&<FileTree tree={node} selectedPath={selectedPath} onSelect={onSelect} depth={depth+1}/>}</div>;
   })}</div>;
 }
 
@@ -1014,7 +1015,7 @@ function FileTree({tree,selectedPath,onSelect,depth=0}){
 function ResourceBuilder({cloud,resources,onChange}){
   const [search,setSearch]=useState("");
   const [activeCat,setActiveCat]=useState("All");
-  if(!cloud)return <div style={{color:"#475569",fontFamily:"JetBrains Mono",fontSize:12,padding:20,textAlign:"center"}}>Select a cloud provider in Step 1 first.</div>;
+  if(!cloud)return <div style={{color:"#64748b",fontFamily:"JetBrains Mono",fontSize:12,padding:20,textAlign:"center"}}>Select a cloud provider in Step 1 first.</div>;
   const catalog=SC[cloud]||{};
   const cats=["All",...Object.keys(catalog)];
   const selectedIds=resources.map(r=>r.serviceId);
@@ -1044,12 +1045,12 @@ function ResourceBuilder({cloud,resources,onChange}){
           <ServiceBadge abbr={svc.abbr} cat={svc.cat} cloud={cloud} size={28}/>
           <div style={{minWidth:0}}>
             <div style={{fontSize:11,fontWeight:600,color:sel?"#38bdf8":"#94a3b8",fontFamily:"JetBrains Mono",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{svc.label}</div>
-            <div style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{svc.desc}</div>
+            <div style={{fontSize:9,color:"#64748b",fontFamily:"JetBrains Mono",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{svc.desc}</div>
           </div>
           {sel&&<span style={{position:"absolute",top:4,right:6,color:"#38bdf8",fontSize:10}}>✓</span>}
         </div>
       );})}
-      {filtered.length===0&&<div style={{gridColumn:"1/-1",textAlign:"center",color:"#475569",fontFamily:"JetBrains Mono",fontSize:12,padding:"24px 0"}}>No services match "{search}"</div>}
+      {filtered.length===0&&<div style={{gridColumn:"1/-1",textAlign:"center",color:"#64748b",fontFamily:"JetBrains Mono",fontSize:12,padding:"24px 0"}}>No services match "{search}"</div>}
     </div>
 
     {/* Named resource editor */}
@@ -1062,16 +1063,16 @@ function ResourceBuilder({cloud,resources,onChange}){
             <span style={{fontWeight:700,color:"#e2e8f0",fontSize:12,fontFamily:"JetBrains Mono"}}>{r.label}</span>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <span style={{fontSize:10,color:"#475569",fontFamily:"JetBrains Mono"}}>×</span>
+            <span style={{fontSize:10,color:"#64748b",fontFamily:"JetBrains Mono"}}>×</span>
             <button onClick={()=>setCount(r.serviceId,r.count-1)} style={{width:20,height:20,borderRadius:4,background:"#1e3a5f",border:"none",color:"#94a3b8",cursor:"pointer",fontSize:13,lineHeight:1}}>−</button>
             <span style={{fontFamily:"JetBrains Mono",fontSize:13,color:"#38bdf8",minWidth:18,textAlign:"center"}}>{r.count}</span>
             <button onClick={()=>setCount(r.serviceId,r.count+1)} style={{width:20,height:20,borderRadius:4,background:"#1e3a5f",border:"none",color:"#94a3b8",cursor:"pointer",fontSize:13,lineHeight:1}}>+</button>
-            <button onClick={()=>rem(r.serviceId)} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",fontSize:13,marginLeft:4}}>✕</button>
+            <button onClick={()=>rem(r.serviceId)} style={{background:"none",border:"none",color:"#64748b",cursor:"pointer",fontSize:13,marginLeft:4}}>✕</button>
           </div>
         </div>
         <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
           {r.names.map((name,idx)=><div key={idx} style={{display:"flex",alignItems:"center",gap:5}}>
-            <span style={{fontSize:10,color:"#475569",fontFamily:"JetBrains Mono"}}>#{idx+1}</span>
+            <span style={{fontSize:10,color:"#64748b",fontFamily:"JetBrains Mono"}}>#{idx+1}</span>
             <input value={name} onChange={e=>setName(r.serviceId,idx,e.target.value)} style={{background:"#0a1628",border:"1px solid #1e3a5f",color:"#38bdf8",borderRadius:5,padding:"4px 9px",fontFamily:"JetBrains Mono",fontSize:12,width:150,outline:"none"}} onFocus={e=>e.target.style.borderColor="#38bdf8"} onBlur={e=>e.target.style.borderColor="#1e3a5f"}/>
           </div>)}
         </div>
@@ -1089,9 +1090,9 @@ function MicroserviceBuilder({services,onChange}){
     {services.map((s,i)=><div key={i} style={{display:"flex",gap:8,marginBottom:8,alignItems:"center"}}>
       <span style={{fontSize:16}}>⚙️</span>
       <input value={s.name} onChange={e=>upd(i,"name",e.target.value)} placeholder="service-name" style={{flex:1,background:"#060d1a",border:"1px solid #1e3a5f",color:"#38bdf8",borderRadius:6,padding:"6px 10px",fontFamily:"JetBrains Mono",fontSize:12,outline:"none"}}/>
-      <span style={{fontSize:11,color:"#475569",fontFamily:"JetBrains Mono"}}>port:</span>
+      <span style={{fontSize:11,color:"#64748b",fontFamily:"JetBrains Mono"}}>port:</span>
       <input value={s.port} onChange={e=>upd(i,"port",e.target.value)} type="number" style={{width:72,background:"#060d1a",border:"1px solid #1e3a5f",color:"#38bdf8",borderRadius:6,padding:"6px 8px",fontFamily:"JetBrains Mono",fontSize:12,outline:"none"}}/>
-      <button onClick={()=>rem(i)} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",fontSize:13}}>✕</button>
+      <button onClick={()=>rem(i)} style={{background:"none",border:"none",color:"#64748b",cursor:"pointer",fontSize:13}}>✕</button>
     </div>)}
     <button onClick={add} style={{background:"#0a1628",border:"1px dashed #1e4a7a",color:"#38bdf8",borderRadius:7,padding:"7px 16px",fontFamily:"JetBrains Mono",fontSize:12,cursor:"pointer",width:"100%",marginTop:4}}>+ Add microservice</button>
   </div>;
@@ -1107,14 +1108,14 @@ function ConfigMgmtBuilder({configTool,configPresets,onChange}){
         <div key={t.id} onClick={()=>onChange({configTool:t.id,configPresets})} style={{padding:"9px 14px",border:`1px solid ${configTool===t.id?"#38bdf8":"#1e3a5f"}`,borderRadius:8,cursor:"pointer",background:configTool===t.id?"#0f2944":"transparent",minWidth:110,textAlign:"center"}}>
           <div style={{fontSize:18,marginBottom:2}}>{t.icon}</div>
           <div style={{fontWeight:600,color:configTool===t.id?"#38bdf8":"#94a3b8",fontSize:12,fontFamily:"JetBrains Mono"}}>{t.label}</div>
-          <div style={{fontSize:10,color:"#475569",fontFamily:"JetBrains Mono",marginTop:2}}>{t.desc}</div>
+          <div style={{fontSize:10,color:"#64748b",fontFamily:"JetBrains Mono",marginTop:2}}>{t.desc}</div>
         </div>
       ))}
     </div>
     {configTool&&<div>
       <div style={{fontSize:11,color:"#38bdf8",letterSpacing:2,fontFamily:"JetBrains Mono",marginBottom:12}}>SOFTWARE TO CONFIGURE</div>
       {cats.map(cat=><div key={cat} style={{marginBottom:14}}>
-        <div style={{fontSize:10,color:"#475569",fontFamily:"JetBrains Mono",letterSpacing:1,marginBottom:7}}>{cat.toUpperCase()}</div>
+        <div style={{fontSize:10,color:"#64748b",fontFamily:"JetBrains Mono",letterSpacing:1,marginBottom:7}}>{cat.toUpperCase()}</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
           {CONFIG_PRESETS[cat].map(p=>{const on=configPresets.includes(p.id);return(
             <div key={p.id} onClick={()=>toggle(p.id)} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",border:`1px solid ${on?"#38bdf8":"#1e3a5f"}`,borderRadius:20,cursor:"pointer",background:on?"#0f2944":"transparent"}}>
@@ -1272,7 +1273,7 @@ function ArchDiagram({resources,microservices,cloud,deployTarget}){
       <div style={{display:"flex",alignItems:"center",gap:8}}>
         <span style={{fontSize:14}}>🗺️</span>
         <span style={{fontSize:11,fontWeight:600,color:"#38bdf8",letterSpacing:2,fontFamily:"JetBrains Mono"}}>ARCHITECTURE PREVIEW</span>
-        {allNodes.length===0&&<span style={{fontSize:10,color:"#475569",fontFamily:"JetBrains Mono"}}>— add resources in step 2 to see them here</span>}
+        {allNodes.length===0&&<span style={{fontSize:10,color:"#64748b",fontFamily:"JetBrains Mono"}}>— add resources in step 2 to see them here</span>}
       </div>
       <div style={{display:"flex",gap:6}}>
         {[1,2,3,4,5,6].map(t=>{
@@ -1395,7 +1396,7 @@ function ArchDiagram({resources,microservices,cloud,deployTarget}){
         const totalW=svcChips.length*chipW+(svcChips.length-1)*6;
         const sx=(CANVAS_W-totalW)/2;
         return <g>
-          <text x={CANVAS_W/2} y={compY+14} textAnchor="middle" fontSize="8" fontFamily="JetBrains Mono" fill="#475569">services</text>
+          <text x={CANVAS_W/2} y={compY+14} textAnchor="middle" fontSize="8" fontFamily="JetBrains Mono" fill="#64748b">services</text>
           {svcChips.map((s,i)=><g key={s.name}>
             <rect x={sx+i*(chipW+6)} y={compY+18} width={chipW} height={18} rx="4"
               fill="#0f2944" stroke="#1e4a7a" strokeWidth="0.8"/>
@@ -1420,7 +1421,7 @@ function ArchDiagram({resources,microservices,cloud,deployTarget}){
           <rect x={tx} y={ty} width={tw} height={th} rx="6" fill="#0f2944" stroke={tip.color} strokeWidth="1"/>
           <text x={tx+8} y={ty+14} fontSize="10" fontFamily="JetBrains Mono" fontWeight="700" fill="#e2e8f0">{tip.label.length>17?tip.label.slice(0,16)+"…":tip.label}</text>
           <text x={tx+8} y={ty+28} fontSize="9" fontFamily="JetBrains Mono" fill={tip.color}>{tip.name}</text>
-          <text x={tx+8} y={ty+40} fontSize="8" fontFamily="JetBrains Mono" fill="#475569">{tip.cat}</text>
+          <text x={tx+8} y={ty+40} fontSize="8" fontFamily="JetBrains Mono" fill="#64748b">{tip.cat}</text>
         </g>;
       })()}
     </svg>
@@ -1449,19 +1450,19 @@ function CostSummary({resources,cloud}){
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
         <div style={{fontSize:10,color:"#22c55e",letterSpacing:2,fontFamily:"JetBrains Mono"}}>💰 ESTIMATED MONTHLY COST</div>
         <div style={{display:"flex",gap:14}}>
-          <div style={{textAlign:"right"}}><div style={{fontSize:10,color:"#475569",fontFamily:"JetBrains Mono"}}>DEV (~30%)</div><div style={{fontSize:16,fontWeight:700,color:"#22c55e",fontFamily:"JetBrains Mono"}}>${Math.round(total*0.3).toLocaleString()}</div></div>
-          <div style={{textAlign:"right"}}><div style={{fontSize:10,color:"#475569",fontFamily:"JetBrains Mono"}}>PROD</div><div style={{fontSize:16,fontWeight:700,color:"#38bdf8",fontFamily:"JetBrains Mono"}}>${total.toLocaleString()}</div></div>
+          <div style={{textAlign:"right"}}><div style={{fontSize:10,color:"#64748b",fontFamily:"JetBrains Mono"}}>DEV (~30%)</div><div style={{fontSize:16,fontWeight:700,color:"#22c55e",fontFamily:"JetBrains Mono"}}>${Math.round(total*0.3).toLocaleString()}</div></div>
+          <div style={{textAlign:"right"}}><div style={{fontSize:10,color:"#64748b",fontFamily:"JetBrains Mono"}}>PROD</div><div style={{fontSize:16,fontWeight:700,color:"#38bdf8",fontFamily:"JetBrains Mono"}}>${total.toLocaleString()}</div></div>
         </div>
       </div>
       <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
         {items.slice(0,10).map(r=><div key={r.serviceId} style={{display:"flex",alignItems:"center",gap:5,background:"#060d1a",border:"1px solid #1e3a5f",borderRadius:6,padding:"3px 8px"}}>
           <span style={{fontSize:9,color:"#94a3b8",fontFamily:"JetBrains Mono"}}>{r.abbr}</span>
-          {r.count>1&&<span style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono"}}>×{r.count}</span>}
+          {r.count>1&&<span style={{fontSize:9,color:"#64748b",fontFamily:"JetBrains Mono"}}>×{r.count}</span>}
           <span style={{fontSize:9,color:"#22c55e",fontFamily:"JetBrains Mono"}}>${r.cost}/mo</span>
         </div>)}
-        {items.length>10&&<div style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",alignSelf:"center"}}>+{items.length-10} more</div>}
+        {items.length>10&&<div style={{fontSize:9,color:"#64748b",fontFamily:"JetBrains Mono",alignSelf:"center"}}>+{items.length-10} more</div>}
       </div>
-      <div style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",marginTop:8}}>* Rough estimates. Actual costs vary by region, usage and tier.</div>
+      <div style={{fontSize:9,color:"#64748b",fontFamily:"JetBrains Mono",marginTop:8}}>* Rough estimates. Actual costs vary by region, usage and tier.</div>
     </div>
   );
 }
@@ -1527,15 +1528,15 @@ function GitHubModal({outputs,appSlug,onClose}){
       <div style={{background:"#0a1628",border:"1px solid #1e3a5f",borderRadius:14,padding:28,width:460,maxWidth:"90vw"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:18}}>
           <div style={{fontWeight:700,fontSize:16,display:"flex",alignItems:"center",gap:8}}><span>⚙️</span> Push to GitHub</div>
-          <button onClick={onClose} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",fontSize:18,lineHeight:1}}>×</button>
+          <button onClick={onClose} style={{background:"none",border:"none",color:"#64748b",cursor:"pointer",fontSize:18,lineHeight:1}}>×</button>
         </div>
         <div style={{marginBottom:12}}>
-          <label style={{display:"block",fontSize:10,color:"#475569",fontFamily:"JetBrains Mono",marginBottom:5}}>PERSONAL ACCESS TOKEN (repo scope)</label>
+          <label style={{display:"block",fontSize:10,color:"#64748b",fontFamily:"JetBrains Mono",marginBottom:5}}>PERSONAL ACCESS TOKEN (repo scope)</label>
           <input type="password" value={token} onChange={e=>setToken(e.target.value)} placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style={{width:"100%",background:"#060d1a",border:"1px solid #1e3a5f",color:"#e2e8f0",borderRadius:7,padding:"8px 11px",fontFamily:"JetBrains Mono",fontSize:12,outline:"none"}}/>
           <a href="https://github.com/settings/tokens/new?scopes=repo&description=StackForge+AI" target="_blank" style={{fontSize:10,color:"#38bdf8",fontFamily:"JetBrains Mono",marginTop:4,display:"block"}}>→ Create token on GitHub</a>
         </div>
         <div style={{marginBottom:12}}>
-          <label style={{display:"block",fontSize:10,color:"#475569",fontFamily:"JetBrains Mono",marginBottom:5}}>REPOSITORY NAME</label>
+          <label style={{display:"block",fontSize:10,color:"#64748b",fontFamily:"JetBrains Mono",marginBottom:5}}>REPOSITORY NAME</label>
           <input type="text" value={repoName} onChange={e=>setRepoName(e.target.value)} style={{width:"100%",background:"#060d1a",border:"1px solid #1e3a5f",color:"#38bdf8",borderRadius:7,padding:"8px 11px",fontFamily:"JetBrains Mono",fontSize:12,outline:"none"}}/>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:18}}>
@@ -1583,16 +1584,16 @@ function HistoryPanel({onLoad,onClose}){
       <div style={{background:"#0a1628",border:"1px solid #1e3a5f",borderLeft:"1px solid #38bdf8",width:380,height:"100vh",overflowY:"auto",padding:22}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:18}}>
           <div style={{fontWeight:700,fontSize:15,display:"flex",alignItems:"center",gap:8}}>💾 Saved Stacks</div>
-          <button onClick={onClose} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",fontSize:18}}>×</button>
+          <button onClick={onClose} style={{background:"none",border:"none",color:"#64748b",cursor:"pointer",fontSize:18}}>×</button>
         </div>
-        {loading&&<div style={{color:"#475569",fontFamily:"JetBrains Mono",fontSize:12,textAlign:"center",padding:"30px 0"}}>Loading…</div>}
-        {!loading&&stacks.length===0&&<div style={{color:"#475569",fontFamily:"JetBrains Mono",fontSize:12,textAlign:"center",padding:"30px 0"}}>No saved stacks yet.<br/>Generate a stack to save it.</div>}
+        {loading&&<div style={{color:"#64748b",fontFamily:"JetBrains Mono",fontSize:12,textAlign:"center",padding:"30px 0"}}>Loading…</div>}
+        {!loading&&stacks.length===0&&<div style={{color:"#64748b",fontFamily:"JetBrains Mono",fontSize:12,textAlign:"center",padding:"30px 0"}}>No saved stacks yet.<br/>Generate a stack to save it.</div>}
         {stacks.map((s,i)=>(
           <div key={s.key} style={{background:"#060d1a",border:"1px solid #1e3a5f",borderRadius:10,padding:14,marginBottom:10}}>
             <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
               {[s.cloud,s.pipeline,s.iac,s.deploy].filter(Boolean).map(t=><span key={t} style={{background:"#0f2944",border:"1px solid #1e4a7a",borderRadius:20,padding:"2px 8px",fontSize:9,fontFamily:"JetBrains Mono",color:"#38bdf8"}}>{t}</span>)}
             </div>
-            <div style={{fontSize:10,color:"#475569",fontFamily:"JetBrains Mono",marginBottom:10}}>{s.files} files generated</div>
+            <div style={{fontSize:10,color:"#64748b",fontFamily:"JetBrains Mono",marginBottom:10}}>{s.files} files generated</div>
             <div style={{display:"flex",gap:7}}>
               <button onClick={()=>{onLoad(s.data);onClose();}} style={{flex:1,background:"linear-gradient(135deg,#0ea5e9,#2563eb)",border:"none",color:"#fff",padding:"6px 12px",borderRadius:6,fontFamily:"Syne",fontWeight:600,fontSize:11,cursor:"pointer"}}>Load Stack</button>
               <button onClick={async()=>{await window.storage.delete(s.key);setStacks(ss=>ss.filter((_,j)=>j!==i));}} style={{background:"transparent",border:"1px solid #2d1a1a",color:"#ef4444",padding:"6px 10px",borderRadius:6,fontFamily:"JetBrains Mono",fontSize:10,cursor:"pointer"}}>✕</button>
@@ -1659,14 +1660,14 @@ function DiffViewer({currentOutputs,onClose}){
             <span style={{fontWeight:700,fontSize:14}}>Stack Diff Viewer</span>
             {diffs>0&&<span style={{background:"#4c1d95",border:"1px solid #7c3aed",borderRadius:20,padding:"2px 9px",fontSize:10,fontFamily:"JetBrains Mono",color:"#a78bfa"}}>{diffs} changed lines</span>}
           </div>
-          <button onClick={onClose} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",fontSize:18}}>×</button>
+          <button onClick={onClose} style={{background:"none",border:"none",color:"#64748b",cursor:"pointer",fontSize:18}}>×</button>
         </div>
         <div style={{display:"flex",flex:1,overflow:"hidden"}}>
           {/* Sidebar: pick comparison stack */}
           <div style={{width:220,borderRight:"1px solid #1e3a5f",overflowY:"auto",padding:"12px 8px",flexShrink:0}}>
-            <div style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",letterSpacing:1,padding:"0 6px 8px"}}>COMPARE AGAINST</div>
-            {loading&&<div style={{color:"#475569",fontSize:11,fontFamily:"JetBrains Mono",padding:"10px 6px"}}>Loading…</div>}
-            {!loading&&stacks.length===0&&<div style={{color:"#475569",fontSize:11,fontFamily:"JetBrains Mono",padding:"10px 6px"}}>No saved stacks yet</div>}
+            <div style={{fontSize:9,color:"#64748b",fontFamily:"JetBrains Mono",letterSpacing:1,padding:"0 6px 8px"}}>COMPARE AGAINST</div>
+            {loading&&<div style={{color:"#64748b",fontSize:11,fontFamily:"JetBrains Mono",padding:"10px 6px"}}>Loading…</div>}
+            {!loading&&stacks.length===0&&<div style={{color:"#64748b",fontSize:11,fontFamily:"JetBrains Mono",padding:"10px 6px"}}>No saved stacks yet</div>}
             {stacks.map(s=><div key={s.key} onClick={()=>setSelected(s)}
               style={{padding:"8px 10px",borderRadius:7,marginBottom:5,cursor:"pointer",background:selected?.key===s.key?"#1a0e4a":"#060d1a",border:`1px solid ${selected?.key===s.key?"#7c3aed":"#1e3a5f"}`}}>
               <div style={{fontSize:10,fontFamily:"JetBrains Mono",color:selected?.key===s.key?"#a78bfa":"#64748b",wordBreak:"break-all"}}>{s.label}</div>
@@ -1680,7 +1681,7 @@ function DiffViewer({currentOutputs,onClose}){
             </div>
             {/* Side by side */}
             {!selected?
-              <div style={{display:"flex",alignItems:"center",justifyContent:"center",flex:1,color:"#475569",fontFamily:"JetBrains Mono",fontSize:12}}>← Select a saved stack to compare</div>:
+              <div style={{display:"flex",alignItems:"center",justifyContent:"center",flex:1,color:"#64748b",fontFamily:"JetBrains Mono",fontSize:12}}>← Select a saved stack to compare</div>:
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",flex:1,overflow:"hidden"}}>
                 <div style={{overflowY:"auto",borderRight:"1px solid #1e3a5f"}}>
                   <div style={{padding:"6px 12px",background:"#0f2944",borderBottom:"1px solid #1e3a5f",fontSize:10,fontFamily:"JetBrains Mono",color:"#38bdf8",position:"sticky",top:0}}>CURRENT</div>
@@ -1713,7 +1714,7 @@ function ExistingInfraPanel({value,onChange}){
     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:on?14:0}}>
       <div>
         <div style={{fontSize:11,fontWeight:700,color:"#e2e8f0",fontFamily:"JetBrains Mono",marginBottom:3}}>🔗 EXTEND EXISTING INFRASTRUCTURE</div>
-        <div style={{fontSize:10,color:"#475569",fontFamily:"JetBrains Mono"}}>Have a previous stack? Paste outputs — new modules reference existing resources via data sources</div>
+        <div style={{fontSize:10,color:"#64748b",fontFamily:"JetBrains Mono"}}>Have a previous stack? Paste outputs — new modules reference existing resources via data sources</div>
       </div>
       <div onClick={()=>onChange({...value,enabled:!on})} style={{width:38,height:20,background:on?"#0ea5e9":"#1e3a5f",borderRadius:10,cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0,marginLeft:12}}>
         <div style={{width:16,height:16,background:"#fff",borderRadius:"50%",position:"absolute",top:2,left:on?20:2,transition:"left .2s"}}/>
@@ -1722,21 +1723,21 @@ function ExistingInfraPanel({value,onChange}){
     {on&&<div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
         <div>
-          <div style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",letterSpacing:1,marginBottom:4}}>VPC ID <span style={{color:"#38bdf8"}}>(terraform output vpc_id)</span></div>
+          <div style={{fontSize:9,color:"#64748b",fontFamily:"JetBrains Mono",letterSpacing:1,marginBottom:4}}>VPC ID <span style={{color:"#38bdf8"}}>(terraform output vpc_id)</span></div>
           <input value={value.vpcId||""} onChange={e=>upd("vpcId",e.target.value)} placeholder="vpc-0abc123..." style={fs}/>
         </div>
         <div>
-          <div style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",letterSpacing:1,marginBottom:4}}>DB ENDPOINT <span style={{color:"#475569"}}>(skip if creating new DB)</span></div>
+          <div style={{fontSize:9,color:"#64748b",fontFamily:"JetBrains Mono",letterSpacing:1,marginBottom:4}}>DB ENDPOINT <span style={{color:"#64748b"}}>(skip if creating new DB)</span></div>
           <input value={value.dbEndpoint||""} onChange={e=>upd("dbEndpoint",e.target.value)} placeholder="mydb.xxxx.rds.amazonaws.com" style={fs}/>
         </div>
       </div>
-      <div style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",letterSpacing:1,marginBottom:4}}>PRIVATE SUBNET IDs <span style={{color:"#38bdf8"}}>(terraform output private_subnet_ids)</span></div>
+      <div style={{fontSize:9,color:"#64748b",fontFamily:"JetBrains Mono",letterSpacing:1,marginBottom:4}}>PRIVATE SUBNET IDs <span style={{color:"#38bdf8"}}>(terraform output private_subnet_ids)</span></div>
       <input value={value.privateSubnets||""} onChange={e=>upd("privateSubnets",e.target.value)} placeholder="subnet-aaa,subnet-bbb,subnet-ccc" style={fs}/>
-      <div style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",letterSpacing:1,marginBottom:4}}>PUBLIC SUBNET IDs</div>
+      <div style={{fontSize:9,color:"#64748b",fontFamily:"JetBrains Mono",letterSpacing:1,marginBottom:4}}>PUBLIC SUBNET IDs</div>
       <input value={value.publicSubnets||""} onChange={e=>upd("publicSubnets",e.target.value)} placeholder="subnet-xxx,subnet-yyy" style={fs}/>
-      <div style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",letterSpacing:1,marginBottom:4}}>DB SECRET ARN <span style={{color:"#475569"}}>(optional)</span></div>
+      <div style={{fontSize:9,color:"#64748b",fontFamily:"JetBrains Mono",letterSpacing:1,marginBottom:4}}>DB SECRET ARN <span style={{color:"#64748b"}}>(optional)</span></div>
       <input value={value.dbSecretArn||""} onChange={e=>upd("dbSecretArn",e.target.value)} placeholder="arn:aws:secretsmanager:us-east-1:123:secret:app" style={fs}/>
-      <div style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",letterSpacing:1,marginBottom:4}}>ADDITIONAL OUTPUTS <span style={{color:"#475569"}}>(key = value, one per line)</span></div>
+      <div style={{fontSize:9,color:"#64748b",fontFamily:"JetBrains Mono",letterSpacing:1,marginBottom:4}}>ADDITIONAL OUTPUTS <span style={{color:"#64748b"}}>(key = value, one per line)</span></div>
       <textarea
         value={value.additionalOutputs||""}
         onChange={e=>upd("additionalOutputs",e.target.value)}
@@ -1746,7 +1747,7 @@ function ExistingInfraPanel({value,onChange}){
       />
       <div style={{background:"#060d1a",border:"1px solid #0f2944",borderRadius:7,padding:"8px 12px",marginTop:4}}>
         <div style={{fontSize:9,color:"#38bdf8",fontFamily:"JetBrains Mono",marginBottom:3}}>💡 GET YOUR OUTPUTS</div>
-        <div style={{fontSize:10,color:"#475569",fontFamily:"JetBrains Mono",lineHeight:1.7}}>
+        <div style={{fontSize:10,color:"#64748b",fontFamily:"JetBrains Mono",lineHeight:1.7}}>
           Run in your existing stack: <span style={{color:"#38bdf8"}}>terraform output -json</span> or <span style={{color:"#38bdf8"}}>terraform output vpc_id</span><br/>
           New modules use <span style={{color:"#38bdf8"}}>data sources</span> to reference existing resources — nothing gets recreated.
         </div>
@@ -1822,7 +1823,7 @@ export default function App(){
     for(const line of lines){
       if(line.startsWith("```")){
         if(!inCode){inCode=true;lang=line.slice(3).trim();code=[];}
-        else{out.push(<div key={k++} style={{borderRadius:7,overflow:"hidden",border:"1px solid #1e3a5f",marginBottom:12}}>{lang&&<div style={{background:"#060d1a",color:"#475569",fontSize:10,padding:"3px 12px",fontFamily:"JetBrains Mono",borderBottom:"1px solid #1e3a5f"}}>{lang}</div>}<pre style={{background:"#060d1a",padding:"11px 15px",margin:0,overflowX:"auto",fontSize:12,lineHeight:1.6,color:"#e2e8f0",fontFamily:"JetBrains Mono"}}><code>{code.join("\n")}</code></pre></div>);inCode=false;code=[];lang="";}
+        else{out.push(<div key={k++} style={{borderRadius:7,overflow:"hidden",border:"1px solid #1e3a5f",marginBottom:12}}>{lang&&<div style={{background:"#060d1a",color:"#64748b",fontSize:10,padding:"3px 12px",fontFamily:"JetBrains Mono",borderBottom:"1px solid #1e3a5f"}}>{lang}</div>}<pre style={{background:"#060d1a",padding:"11px 15px",margin:0,overflowX:"auto",fontSize:12,lineHeight:1.6,color:"#e2e8f0",fontFamily:"JetBrains Mono"}}><code>{code.join("\n")}</code></pre></div>);inCode=false;code=[];lang="";}
       }else if(inCode)code.push(line);
       else if(line.startsWith("# File:"))out.push(<div key={k++} style={{background:"#0f2944",border:"1px solid #1e4a7a",borderRadius:5,padding:"5px 11px",margin:"12px 0 4px",display:"flex",gap:6,alignItems:"center"}}><span style={{color:"#38bdf8"}}>📄</span><span style={{color:"#7dd3fc",fontFamily:"JetBrains Mono",fontSize:12,fontWeight:600}}>{line.replace("# File:","").trim()}</span></div>);
       else if(line.startsWith("# "))out.push(<h2 key={k++} style={{color:"#38bdf8",fontFamily:"Syne",fontSize:16,margin:"18px 0 6px",borderBottom:"1px solid #1e3a5f",paddingBottom:4}}>{line.slice(2)}</h2>);
@@ -1861,19 +1862,19 @@ export default function App(){
       <div style={{maxWidth:1240,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:52}}>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <div style={{width:28,height:28,background:"linear-gradient(135deg,#0ea5e9,#2563eb)",borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>⚡</div>
-          <div><div style={{fontWeight:800,fontSize:14,letterSpacing:1}}>STACKFORGE <span style={{color:"#38bdf8"}}>AI</span></div><div style={{fontSize:8,color:"#475569",letterSpacing:2,fontFamily:"JetBrains Mono"}}>DEVOPS STACK GENERATOR</div></div>
+          <div><div style={{fontWeight:800,fontSize:14,letterSpacing:1}}>STACKFORGE <span style={{color:"#38bdf8"}}>AI</span></div><div style={{fontSize:8,color:"#64748b",letterSpacing:2,fontFamily:"JetBrains Mono"}}>DEVOPS STACK GENERATOR</div></div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <div style={{display:"flex",alignItems:"center",gap:4,background:"#0a1628",border:"1px solid #1e3a5f",borderRadius:20,padding:"3px 10px"}}>
             <span style={{fontSize:10}}>💾</span>
             <span style={{fontSize:10,fontFamily:"JetBrains Mono",color:"#22c55e",cursor:"pointer"}} onClick={()=>setShowHistory(true)}>{cacheCount} stacks</span>
-            {cacheCount>0&&<button onClick={async()=>{try{const r=await window.storage.list("sf:");if(r?.keys)for(const k of r.keys)await window.storage.delete(k);setCacheCount(0);}catch{}}} style={{background:"none",border:"none",color:"#475569",fontSize:9,cursor:"pointer",fontFamily:"JetBrains Mono",marginLeft:2}}>clear</button>}
+            {cacheCount>0&&<button onClick={async()=>{try{const r=await window.storage.list("sf:");if(r?.keys)for(const k of r.keys)await window.storage.delete(k);setCacheCount(0);}catch{}}} style={{background:"none",border:"none",color:"#64748b",fontSize:9,cursor:"pointer",fontFamily:"JetBrains Mono",marginLeft:2}}>clear</button>}
           </div>
           <div style={{display:"flex",gap:2,alignItems:"center"}}>
             {STEP_LABELS.map((label,i)=>{const s=i+1,active=step===s,done=step>s;return <div key={s} style={{display:"flex",alignItems:"center",gap:2}}>
-              <div style={{display:"flex",alignItems:"center",gap:4,padding:"2px 8px",borderRadius:20,background:active?"#0f2944":done?"rgba(56,189,248,.08)":"transparent",border:`1px solid ${active?"#38bdf8":done?"rgba(56,189,248,.25)":"#1e3a5f"}`}}>
+              <div onClick={()=>done&&setStep(s)} style={{display:"flex",alignItems:"center",gap:4,padding:"2px 8px",borderRadius:20,background:active?"#0f2944":done?"rgba(56,189,248,.08)":"transparent",border:`1px solid ${active?"#38bdf8":done?"rgba(56,189,248,.25)":"#1e3a5f"}`,cursor:done?"pointer":"default"}}>
                 <div style={{width:14,height:14,borderRadius:"50%",background:active?"#38bdf8":done?"#0ea5e9":"#1e3a5f",display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:700,color:"#fff"}}>{done?"✓":s}</div>
-                <span style={{fontSize:9,fontFamily:"JetBrains Mono",color:active?"#38bdf8":done?"#38bdf8":"#475569"}}>{label}</span>
+                <span style={{fontSize:9,fontFamily:"JetBrains Mono",color:active?"#38bdf8":done?"#38bdf8":"#64748b"}}>{label}</span>
               </div>
               {s<4&&<div style={{width:10,height:1,background:done?"#38bdf8":"#1e3a5f"}}/>}
             </div>;})}
@@ -1904,7 +1905,7 @@ export default function App(){
                 <span style={{fontSize:18}}>{p.icon}</span>
                 <div>
                   <div style={{fontWeight:700,color:"#e2e8f0",fontSize:12,fontFamily:"JetBrains Mono"}}>{p.label}</div>
-                  <div style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",marginTop:1}}>{p.desc}</div>
+                  <div style={{fontSize:9,color:"#64748b",fontFamily:"JetBrains Mono",marginTop:1}}>{p.desc}</div>
                   <div style={{fontSize:9,color:"#38bdf880",fontFamily:"JetBrains Mono",marginTop:1}}>{res.length} services pre-selected</div>
                 </div>
               </div>
@@ -1947,11 +1948,19 @@ export default function App(){
                 <span style={{fontSize:16}}>{d.icon}</span>
                 <div>
                   <div style={{fontWeight:600,color:form.deployTarget===d.id?"#38bdf8":"#94a3b8",fontSize:12}}>{d.label}</div>
-                  {d.note&&<div style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",marginTop:1}}>{d.note}</div>}
+                  {d.note&&<div style={{fontSize:9,color:"#64748b",fontFamily:"JetBrains Mono",marginTop:1}}>{d.note}</div>}
                 </div>
                 {form.deployTarget===d.id&&<span style={{marginLeft:"auto",color:"#38bdf8",fontSize:12}}>✓</span>}
               </div>
             </div>)}
+          </div>
+        </div>}
+
+        {["ec2","vm","gce"].includes(form.deployTarget)&&<div style={{background:"#0a1628",border:"1px solid #f59e0b",borderRadius:10,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:16,flexShrink:0}}>🔧</span>
+          <div>
+            <div style={{fontSize:11,fontWeight:700,color:"#fbbf24",fontFamily:"JetBrains Mono",marginBottom:2}}>Configure server software in Step 2 → Config Mgmt</div>
+            <div style={{fontSize:10,color:"#94a3b8",fontFamily:"JetBrains Mono"}}>Select nginx, PM2, Certbot, Fail2ban, Docker, etc. — Ansible playbooks will be generated for each.</div>
           </div>
         </div>}
 
@@ -1960,7 +1969,7 @@ export default function App(){
           <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
             {availIac.map(t=><div key={t.id} className="sel" onClick={()=>setForm(f=>({...f,iacTool:t.id}))} style={{padding:"8px 13px",border:`1px solid ${form.iacTool===t.id?"#38bdf8":"#1e3a5f"}`,borderRadius:8,background:form.iacTool===t.id?"#0f2944":"transparent",minWidth:105}}>
               <div style={{fontWeight:600,color:form.iacTool===t.id?"#38bdf8":"#94a3b8",fontSize:12}}>{t.label}</div>
-              {t.sub&&<div style={{fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",marginTop:1}}>{t.sub}</div>}
+              {t.sub&&<div style={{fontSize:9,color:"#64748b",fontFamily:"JetBrains Mono",marginTop:1}}>{t.sub}</div>}
             </div>)}
           </div>
         </div>
@@ -1979,7 +1988,7 @@ export default function App(){
             {(REGIONS[form.cloud]||[]).map(r=><div key={r} onClick={()=>setForm(f=>({...f,region:r}))} style={{padding:"4px 11px",border:`1px solid ${form.region===r?"#38bdf8":"#1e3a5f"}`,borderRadius:20,cursor:"pointer",background:form.region===r?"#0f2944":"transparent",fontSize:11,fontFamily:"JetBrains Mono",color:form.region===r?"#38bdf8":"#64748b"}}>{r}</div>)}
           </div>
           {form.region&&<div>
-            <label style={{display:"block",fontSize:10,color:"#7dd3fc",letterSpacing:2,fontFamily:"JetBrains Mono",marginBottom:7}}>DR / SECONDARY REGION <span style={{color:"#475569",fontWeight:400}}>(optional)</span></label>
+            <label style={{display:"block",fontSize:10,color:"#7dd3fc",letterSpacing:2,fontFamily:"JetBrains Mono",marginBottom:7}}>DR / SECONDARY REGION <span style={{color:"#64748b",fontWeight:400}}>(optional)</span></label>
             <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
               {(REGIONS[form.cloud]||[]).filter(r=>r!==form.region).map(r=><div key={r} onClick={()=>setForm(f=>({...f,drRegion:f.drRegion===r?"":r}))} style={{padding:"4px 11px",border:`1px solid ${form.drRegion===r?"#7dd3fc":"#1e3a5f"}`,borderRadius:20,cursor:"pointer",background:form.drRegion===r?"#0f1a2e":"transparent",fontSize:11,fontFamily:"JetBrains Mono",color:form.drRegion===r?"#7dd3fc":"#64748b"}}>{r}</div>)}
             </div>
@@ -1994,7 +2003,7 @@ export default function App(){
               <div style={{fontWeight:600,fontSize:12,fontFamily:"JetBrains Mono",color:form.compliance===cp.id?cp.color:"#94a3b8"}}>{cp.label}</div>
             </div>)}
           </div>
-          {form.compliance&&<div style={{fontSize:10,color:"#475569",fontFamily:"JetBrains Mono",marginTop:8,lineHeight:1.6}}>{COMPLIANCE.find(cp=>cp.id===form.compliance)?.extra}</div>}
+          {form.compliance&&<div style={{fontSize:10,color:"#64748b",fontFamily:"JetBrains Mono",marginTop:8,lineHeight:1.6}}>{COMPLIANCE.find(cp=>cp.id===form.compliance)?.extra}</div>}
         </div>
 
         {/* Existing infrastructure panel */}
@@ -2005,7 +2014,7 @@ export default function App(){
 
         <div style={{textAlign:"center"}}>
           <button className="bp" disabled={!form.appDescription||!form.cloud||!form.pipeline} onClick={()=>setStep(2)} style={{fontSize:14,padding:"12px 40px"}}>Next: Resources & Config →</button>
-          {(!form.appDescription||!form.cloud||!form.pipeline)&&<p style={{color:"#475569",fontSize:10,fontFamily:"JetBrains Mono",marginTop:7}}>Fill in description, cloud, and pipeline to continue</p>}
+          {(!form.appDescription||!form.cloud||!form.pipeline)&&<p style={{color:"#64748b",fontSize:10,fontFamily:"JetBrains Mono",marginTop:7}}>Fill in description, cloud, and pipeline to continue</p>}
         </div>
       </div>}
 
@@ -2018,21 +2027,27 @@ export default function App(){
 
         {/* Sub-tabs */}
         <div style={{display:"flex",gap:6,marginBottom:16}}>
-          {[{id:"resources",label:"☁️ Cloud Resources"},{id:"services",label:"⚙️ Microservices"},{id:"config",label:"🔧 Config Mgmt"}].map(t=><button key={t.id} onClick={()=>setStep2Tab(t.id)} className={`tab ${step2Tab===t.id?"on":""}`}>{t.label}{t.id==="resources"&&form.resources.length>0?<span style={{marginLeft:5,background:"#0ea5e9",color:"#fff",borderRadius:20,padding:"0 5px",fontSize:9,fontFamily:"JetBrains Mono"}}>{form.resources.length}</span>:null}{t.id==="services"&&form.microservices.length>0?<span style={{marginLeft:5,background:"#0ea5e9",color:"#fff",borderRadius:20,padding:"0 5px",fontSize:9,fontFamily:"JetBrains Mono"}}>{form.microservices.length}</span>:null}</button>)}
+          {[{id:"resources",label:"☁️ Cloud Resources"},{id:"services",label:"⚙️ Microservices"},{id:"config",label:"🔧 Config Mgmt"}].map(t=><button key={t.id} onClick={()=>setStep2Tab(t.id)} className={`tab ${step2Tab===t.id?"on":""}`}>
+            {t.label}
+            {t.id==="resources"&&form.resources.length>0?<span style={{marginLeft:5,background:"#0ea5e9",color:"#fff",borderRadius:20,padding:"0 5px",fontSize:9,fontFamily:"JetBrains Mono"}}>{form.resources.length}</span>:null}
+            {t.id==="services"&&form.microservices.length>0?<span style={{marginLeft:5,background:"#0ea5e9",color:"#fff",borderRadius:20,padding:"0 5px",fontSize:9,fontFamily:"JetBrains Mono"}}>{form.microservices.length}</span>:null}
+            {t.id==="config"&&["ec2","vm","gce"].includes(form.deployTarget)&&!form.configTool?<span style={{marginLeft:5,background:"#f59e0b",color:"#000",borderRadius:20,padding:"0 5px",fontSize:9,fontFamily:"JetBrains Mono"}}>!</span>:null}
+            {t.id==="config"&&form.configPresets.length>0?<span style={{marginLeft:5,background:"#f59e0b",color:"#000",borderRadius:20,padding:"0 5px",fontSize:9,fontFamily:"JetBrains Mono"}}>{form.configPresets.length}</span>:null}
+          </button>)}
         </div>
 
         <div style={{background:"#0a1628",border:"1px solid #1e3a5f",borderRadius:12,padding:18,marginBottom:14}}>
           {step2Tab==="resources"&&form.cloud&&<div>
           {/* Environment presets */}
           <div style={{marginBottom:16}}>
-            <div style={{fontSize:10,color:"#38bdf8",letterSpacing:2,fontFamily:"JetBrains Mono",marginBottom:9}}>ENVIRONMENT PRESETS <span style={{color:"#475569",fontWeight:400}}>(click to pre-fill)</span></div>
+            <div style={{fontSize:10,color:"#38bdf8",letterSpacing:2,fontFamily:"JetBrains Mono",marginBottom:9}}>ENVIRONMENT PRESETS <span style={{color:"#64748b",fontWeight:400}}>(click to pre-fill)</span></div>
             <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
               {PRESETS.map(p=>{
                 const hasCloud=Array.isArray(p[form.cloud])&&p[form.cloud].length>0;
                 return <div key={p.id} onClick={()=>{if(!hasCloud)return;const rs=buildRes(form.cloud,p[form.cloud]);setForm(f=>({...f,resources:rs}));}} style={{padding:"9px 14px",border:"1px solid #1e3a5f",borderRadius:8,cursor:hasCloud?"pointer":"not-allowed",background:"#060d1a",minWidth:120,opacity:hasCloud?1:.4}}>
                   <div style={{fontSize:18,marginBottom:3}}>{p.icon}</div>
                   <div style={{fontSize:12,fontWeight:600,color:"#e2e8f0",fontFamily:"JetBrains Mono"}}>{p.label}</div>
-                  <div style={{fontSize:10,color:"#475569",fontFamily:"JetBrains Mono",marginTop:2}}>{p.desc}</div>
+                  <div style={{fontSize:10,color:"#64748b",fontFamily:"JetBrains Mono",marginTop:2}}>{p.desc}</div>
                 </div>;
               })}
             </div>
@@ -2046,11 +2061,11 @@ export default function App(){
 
         {/* Summary chips */}
         <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:16,padding:"10px 14px",background:"#060d1a",border:"1px solid #1e3a5f",borderRadius:9}}>
-          <span style={{fontSize:10,color:"#475569",fontFamily:"JetBrains Mono",alignSelf:"center"}}>Selected:</span>
+          <span style={{fontSize:10,color:"#64748b",fontFamily:"JetBrains Mono",alignSelf:"center"}}>Selected:</span>
           {form.resources.map(r=><span key={r.serviceId} style={{display:"flex",alignItems:"center",gap:5,background:"#0f2944",border:"1px solid #1e4a7a",borderRadius:20,padding:"2px 9px",fontSize:10,fontFamily:"JetBrains Mono",color:"#38bdf8"}}><ServiceBadge abbr={r.abbr} cat={r.cat} cloud={form.cloud} size={14}/>{r.label} ×{r.count}</span>)}
           {form.microservices.map(s=><span key={s.name} style={{background:"#0f1f0f",border:"1px solid #166534",borderRadius:20,padding:"2px 9px",fontSize:10,fontFamily:"JetBrains Mono",color:"#22c55e"}}>⚙️ {s.name}:{s.port}</span>)}
           {form.configTool&&<span style={{background:"#2d1a0f",border:"1px solid #92400e",borderRadius:20,padding:"2px 9px",fontSize:10,fontFamily:"JetBrains Mono",color:"#f59e0b"}}>🔧 {CONFIG_TOOLS.find(t=>t.id===form.configTool)?.label} ({form.configPresets.length} presets)</span>}
-          {!form.resources.length&&!form.microservices.length&&!form.configTool&&<span style={{color:"#475569",fontSize:10,fontFamily:"JetBrains Mono"}}>Nothing selected — Claude will use sensible defaults</span>}
+          {!form.resources.length&&!form.microservices.length&&!form.configTool&&<span style={{color:"#64748b",fontSize:10,fontFamily:"JetBrains Mono"}}>Nothing selected — Claude will use sensible defaults</span>}
         </div>
 
         {/* Live architecture preview in step 2 - only when resources selected */}
@@ -2113,7 +2128,7 @@ ${form.configTool?`├── ${form.configTool}/ ← ${form.configPresets.length
               {label:"SRE Runbook", files:"1 file (runbook.md)", always:true},
             ].map(e=><div key={e.label} style={{background:"#060d1a",border:`1px solid ${e.always?"#1e3a5f":"#0f2944"}`,borderRadius:7,padding:"8px 11px",opacity:e.always?1:.5}}>
               <div style={{fontSize:11,fontWeight:600,color:e.always?"#e2e8f0":"#475569",fontFamily:"JetBrains Mono",marginBottom:3}}>{e.label}</div>
-              <div style={{fontSize:10,color:"#475569",fontFamily:"JetBrains Mono"}}>{e.files}</div>
+              <div style={{fontSize:10,color:"#64748b",fontFamily:"JetBrains Mono"}}>{e.files}</div>
             </div>)}
           </div>
         </div>
@@ -2153,14 +2168,15 @@ ${form.configTool?`├── ${form.configTool}/ ← ${form.configPresets.length
           <div style={{display:"flex",alignItems:"center",gap:9}}>
             {fromCache?<span style={{background:"#0f2944",border:"1px solid #38bdf8",borderRadius:20,padding:"2px 10px",fontSize:10,color:"#38bdf8",fontFamily:"JetBrains Mono"}}>💾 From cache — $0</span>:<span style={{background:"#0f2a1a",border:"1px solid #22c55e",borderRadius:20,padding:"2px 10px",fontSize:10,color:"#22c55e",fontFamily:"JetBrains Mono"}}>✓ Generated + cached</span>}
             <h1 style={{fontSize:21,fontWeight:800,margin:0}}>Your <span style={{color:"#38bdf8"}}>DevOps Stack</span></h1>
-            <span style={{color:"#475569",fontFamily:"JetBrains Mono",fontSize:11}}>{allFiles.length} files</span>
+            <span style={{color:"#64748b",fontFamily:"JetBrains Mono",fontSize:11}}>{allFiles.length} files</span>
           </div>
           <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
             {TABS.filter(t=>outputs[t.id]?.startsWith("❌")).map(t=><button key={t.id} onClick={()=>retrySection(t.id)} disabled={loading} style={{background:"#2d1a0a",border:"1px solid #f97316",color:"#f97316",padding:"5px 10px",borderRadius:6,fontFamily:"Syne",fontWeight:600,fontSize:10,cursor:"pointer"}}>🔄 Retry {t.label}</button>)}
             <button onClick={()=>setShowHistory(true)} style={{background:"transparent",border:"1px solid #1e3a5f",color:"#64748b",padding:"5px 10px",borderRadius:6,fontFamily:"Syne",fontWeight:600,fontSize:10,cursor:"pointer"}}>💾 Stacks</button>
             <button onClick={()=>setShowDiff(true)} style={{background:"transparent",border:"1px solid #8b5cf6",color:"#8b5cf6",padding:"5px 10px",borderRadius:6,fontFamily:"Syne",fontWeight:600,fontSize:10,cursor:"pointer"}}>⇄ Diff</button>
             <button onClick={()=>setShowGitHub(true)} style={{background:"transparent",border:"1px solid #22c55e",color:"#22c55e",padding:"5px 10px",borderRadius:6,fontFamily:"Syne",fontWeight:600,fontSize:10,cursor:"pointer"}}>⚙️ GitHub</button>
-            <button onClick={()=>{setStep(1);setOutputs(null);setSelectedFile(null);setFromCache(false);setCachedSections({});setForm(INIT_FORM);}} style={{background:"transparent",border:"1px solid #1e3a5f",color:"#64748b",padding:"5px 10px",borderRadius:6,fontFamily:"Syne",fontWeight:600,fontSize:10,cursor:"pointer"}}>← New</button>
+            <button onClick={()=>setStep(1)} style={{background:"transparent",border:"1px solid #38bdf8",color:"#38bdf8",padding:"5px 10px",borderRadius:6,fontFamily:"Syne",fontWeight:600,fontSize:10,cursor:"pointer"}}>← Edit Config</button>
+            <button onClick={()=>{setStep(1);setOutputs(null);setSelectedFile(null);setFromCache(false);setCachedSections({});setForm(INIT_FORM);}} style={{background:"transparent",border:"1px solid #475569",color:"#94a3b8",padding:"5px 10px",borderRadius:6,fontFamily:"Syne",fontWeight:600,fontSize:10,cursor:"pointer"}}>🗑️ New</button>
             <button onClick={()=>{const fm={};Object.values(outputs).forEach(t=>{if(!t)return;parseFiles(t).forEach(({path,content})=>{fm[`stackforge-${appSlug}/${path}`]=content;});});const bytes=buildZip(fm);let bin="";const cs=8192;for(let i=0;i<bytes.length;i+=cs)bin+=String.fromCharCode(...bytes.subarray(i,i+cs));const b64=btoa(bin);const a=document.createElement("a");a.href=`data:application/zip;base64,${b64}`;a.download=`stackforge-${appSlug}.zip`;document.body.appendChild(a);a.click();document.body.removeChild(a);}} className="bp" style={{padding:"5px 13px",fontSize:11,display:"flex",alignItems:"center",gap:5}}>
               📦 Download ZIP ({allFiles.length} files)
             </button>
@@ -2189,8 +2205,8 @@ ${form.configTool?`├── ${form.configTool}/ ← ${form.configPresets.length
         {viewMode==="tree"?(
           <div style={{display:"grid",gridTemplateColumns:"230px 1fr",border:"1px solid #1e3a5f",borderRadius:11,overflow:"hidden",height:620}}>
             <div style={{background:"#060d1a",borderRight:"1px solid #1e3a5f",overflowY:"auto",padding:"7px 3px"}}>
-              <div style={{padding:"3px 9px 6px",fontSize:9,color:"#475569",fontFamily:"JetBrains Mono",letterSpacing:1}}>📁 stackforge-{appSlug}/</div>
-              {Object.keys(fileTree).length>0?<FileTree tree={fileTree} selectedPath={selectedFile?.path} onSelect={setSelectedFile}/>:<div style={{color:"#475569",fontSize:11,fontFamily:"JetBrains Mono",padding:"18px 9px",textAlign:"center"}}>{loading?"Generating…":"No files yet"}</div>}
+              <div style={{padding:"3px 9px 6px",fontSize:9,color:"#64748b",fontFamily:"JetBrains Mono",letterSpacing:1}}>📁 stackforge-{appSlug}/</div>
+              {Object.keys(fileTree).length>0?<FileTree tree={fileTree} selectedPath={selectedFile?.path} onSelect={setSelectedFile}/>:<div style={{color:"#64748b",fontSize:11,fontFamily:"JetBrains Mono",padding:"18px 9px",textAlign:"center"}}>{loading?"Generating…":"No files yet"}</div>}
             </div>
             <div style={{background:"#0a1628",overflow:"hidden",display:"flex",flexDirection:"column"}}>
               {selectedFile?(<>
@@ -2198,7 +2214,7 @@ ${form.configTool?`├── ${form.configTool}/ ← ${form.configPresets.length
                   <div style={{display:"flex",alignItems:"center",gap:7}}>
                     <span style={{fontSize:12}}>{fileIcon(selectedFile.path)}</span>
                     <span style={{fontFamily:"JetBrains Mono",fontSize:11,color:"#7dd3fc"}}>{selectedFile.path}</span>
-                    <span style={{fontSize:9,background:"#0f2944",color:"#475569",padding:"1px 6px",borderRadius:7,fontFamily:"JetBrains Mono"}}>{extLang(selectedFile.path)}</span>
+                    <span style={{fontSize:9,background:"#0f2944",color:"#64748b",padding:"1px 6px",borderRadius:7,fontFamily:"JetBrains Mono"}}>{extLang(selectedFile.path)}</span>
                   </div>
                   <div style={{display:"flex",gap:5}}>
                     <button onClick={()=>copy(selectedFile.content,"file")} style={{background:"#0f2944",border:"1px solid #334d6e",color:"#94a3b8",padding:"3px 9px",borderRadius:5,fontFamily:"JetBrains Mono",fontSize:10,cursor:"pointer"}}>{copied==="file"?"✓":"Copy"}</button>
@@ -2208,7 +2224,7 @@ ${form.configTool?`├── ${form.configTool}/ ← ${form.configPresets.length
                 <div style={{overflowY:"auto",flex:1}}>
                   <pre style={{margin:0,padding:"14px 16px",overflowX:"auto",fontSize:12,lineHeight:1.7,color:"#e2e8f0",fontFamily:"JetBrains Mono",background:"transparent"}}><code>{selectedFile.content}</code></pre>
                 </div>
-              </>):<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",color:"#475569",fontFamily:"JetBrains Mono",fontSize:12}}>← Select a file to view</div>}
+              </>):<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",color:"#64748b",fontFamily:"JetBrains Mono",fontSize:12}}>← Select a file to view</div>}
             </div>
           </div>
         ):(
