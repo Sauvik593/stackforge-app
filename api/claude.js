@@ -19,7 +19,9 @@ function getAllowedOrigin() {
   return '*'
 }
 
-// ── Gemini REST call — no SDK required ────────────────────────────────────
+const sleep = ms => new Promise(r => setTimeout(r, ms))
+
+// ── Gemini REST call — no SDK required, with rate-limit retry ─────────────
 async function callGemini(system, messages, max_tokens) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`
 
@@ -35,39 +37,55 @@ async function callGemini(system, messages, max_tokens) {
     }
   }
 
-  const geminiRes = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  })
+  // Retry up to 3 times on rate limit (RESOURCE_EXHAUSTED) with backoff
+  const RETRY_DELAYS = [10000, 20000, 30000] // 10s, 20s, 30s
+  let lastErr
 
-  const data = await geminiRes.json()
+  for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
+    const geminiRes = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    })
 
-  if (!geminiRes.ok) {
-    const status = data?.error?.status || 'UNKNOWN'
-    const msg = data?.error?.message || JSON.stringify(data)
-    if (status === 'RESOURCE_EXHAUSTED') throw { status: 429, msg: 'Gemini free tier limit reached. Please try again later.' }
-    if (status === 'INVALID_ARGUMENT') throw { status: 400, msg: 'Invalid request to AI.' }
-    throw { status: 502, msg: `Gemini error (${status}): ${msg.slice(0, 200)}` }
-  }
+    const data = await geminiRes.json()
 
-  const candidate = data.candidates?.[0]
-  if (!candidate) throw { status: 502, msg: 'AI returned no response. Please retry.' }
+    if (!geminiRes.ok) {
+      const status = data?.error?.status || 'UNKNOWN'
+      const msg = data?.error?.message || JSON.stringify(data)
 
-  const finishReason = candidate.finishReason
-  if (finishReason === 'SAFETY') throw { status: 400, msg: 'Request blocked by safety filter. Rephrase your description.' }
+      if (status === 'RESOURCE_EXHAUSTED') {
+        lastErr = { status: 429, msg: 'AI rate limit reached. Please wait a moment and retry.' }
+        if (attempt < RETRY_DELAYS.length) {
+          console.warn(`[Gemini] RESOURCE_EXHAUSTED, retrying in ${RETRY_DELAYS[attempt] / 1000}s (attempt ${attempt + 1})`)
+          await sleep(RETRY_DELAYS[attempt])
+          continue
+        }
+        throw lastErr
+      }
+      if (status === 'INVALID_ARGUMENT') throw { status: 400, msg: 'Invalid request to AI.' }
+      throw { status: 502, msg: `Gemini error (${status}): ${msg.slice(0, 200)}` }
+    }
 
-  const text = candidate.content?.parts?.map(p => p.text || '').join('') || ''
+    const candidate = data.candidates?.[0]
+    if (!candidate) throw { status: 502, msg: 'AI returned no response. Please retry.' }
 
-  // Return in Anthropic-compatible format so frontend needs no changes
-  return {
-    content: [{ type: 'text', text }],
-    stop_reason: finishReason === 'MAX_TOKENS' ? 'max_tokens' : 'end_turn',
-    usage: {
-      input_tokens: data.usageMetadata?.promptTokenCount || 0,
-      output_tokens: data.usageMetadata?.candidatesTokenCount || 0
+    const finishReason = candidate.finishReason
+    if (finishReason === 'SAFETY') throw { status: 400, msg: 'Request blocked by safety filter. Rephrase your description.' }
+
+    const text = candidate.content?.parts?.map(p => p.text || '').join('') || ''
+
+    return {
+      content: [{ type: 'text', text }],
+      stop_reason: finishReason === 'MAX_TOKENS' ? 'max_tokens' : 'end_turn',
+      usage: {
+        input_tokens: data.usageMetadata?.promptTokenCount || 0,
+        output_tokens: data.usageMetadata?.candidatesTokenCount || 0
+      }
     }
   }
+
+  throw lastErr
 }
 
 // ── Anthropic REST call ────────────────────────────────────────────────────
