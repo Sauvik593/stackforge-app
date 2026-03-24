@@ -1,5 +1,6 @@
 // api/claude.js — Vercel serverless function
-// Validates JWT, checks subscription, detects credential sharing, proxies Anthropic.
+// Validates JWT, checks subscription, detects credential sharing, proxies AI.
+// Provider selection: Anthropic Claude (if ANTHROPIC_API_KEY set) else Google Gemini (free tier).
 // OWNER's API key is used — users never need their own.
 
 import { createClient } from '@supabase/supabase-js'
@@ -12,18 +13,98 @@ const supabase = createClient(
 const SESSION_WINDOW_MINUTES = 15
 const DAILY_CALL_LIMIT = 50
 
-// Derive allowed origin: explicit env var → Vercel deployment URL → dev fallback
 function getAllowedOrigin() {
   if (process.env.ALLOWED_ORIGIN) return process.env.ALLOWED_ORIGIN
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
-  // Local dev only — never reaches production without one of the above
   return '*'
+}
+
+// ── Gemini REST call — no SDK required ────────────────────────────────────
+async function callGemini(system, messages, max_tokens) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`
+
+  const body = {
+    systemInstruction: { parts: [{ text: system || '' }] },
+    contents: messages.map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }]
+    })),
+    generationConfig: {
+      maxOutputTokens: Math.min(max_tokens, 8192),
+      temperature: 0.3
+    }
+  }
+
+  const geminiRes = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  })
+
+  const data = await geminiRes.json()
+
+  if (!geminiRes.ok) {
+    const status = data?.error?.status || 'UNKNOWN'
+    const msg = data?.error?.message || JSON.stringify(data)
+    if (status === 'RESOURCE_EXHAUSTED') throw { status: 429, msg: 'Gemini free tier limit reached. Please try again later.' }
+    if (status === 'INVALID_ARGUMENT') throw { status: 400, msg: 'Invalid request to AI.' }
+    throw { status: 502, msg: `Gemini error (${status}): ${msg.slice(0, 200)}` }
+  }
+
+  const candidate = data.candidates?.[0]
+  if (!candidate) throw { status: 502, msg: 'AI returned no response. Please retry.' }
+
+  const finishReason = candidate.finishReason
+  if (finishReason === 'SAFETY') throw { status: 400, msg: 'Request blocked by safety filter. Rephrase your description.' }
+
+  const text = candidate.content?.parts?.map(p => p.text || '').join('') || ''
+
+  // Return in Anthropic-compatible format so frontend needs no changes
+  return {
+    content: [{ type: 'text', text }],
+    stop_reason: finishReason === 'MAX_TOKENS' ? 'max_tokens' : 'end_turn',
+    usage: {
+      input_tokens: data.usageMetadata?.promptTokenCount || 0,
+      output_tokens: data.usageMetadata?.candidatesTokenCount || 0
+    }
+  }
+}
+
+// ── Anthropic REST call ────────────────────────────────────────────────────
+async function callAnthropic(system, messages, max_tokens) {
+  const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-5',
+      max_tokens: Math.min(max_tokens, 8000),
+      system,
+      messages
+    })
+  })
+
+  const data = await anthropicRes.json()
+
+  if (!anthropicRes.ok) {
+    const errType = data?.error?.type || 'unknown'
+    const errMsg = data?.error?.message || JSON.stringify(data)
+    if (errType === 'overloaded_error') throw { status: 503, msg: 'AI is overloaded. Please wait 30 seconds and retry.' }
+    if (errType === 'rate_limit_error') throw { status: 429, msg: 'Rate limit hit. Please wait 1 minute and retry.' }
+    if (errType === 'authentication_error' || errMsg.includes('credit balance')) throw { status: 500, msg: 'API key error. Contact support.' }
+    if (errMsg.includes('max_tokens')) throw { status: 400, msg: 'Response too long. Try selecting fewer resources.' }
+    throw { status: 502, msg: `AI error (${errType}): ${errMsg.slice(0, 200)}` }
+  }
+
+  return data
 }
 
 export default async function handler(req, res) {
   const allowedOrigin = getAllowedOrigin()
 
-  // ── CORS ──────────────────────────────────────────────────────────────────
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin)
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
@@ -31,9 +112,11 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  // ── Validate required env vars ─────────────────────────────────────────────
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.error('[Config] ANTHROPIC_API_KEY is not set')
+  // ── Validate AI provider config ────────────────────────────────────────────
+  const useAnthropic = !!process.env.ANTHROPIC_API_KEY
+  const useGemini = !!process.env.GEMINI_API_KEY
+  if (!useAnthropic && !useGemini) {
+    console.error('[Config] Neither ANTHROPIC_API_KEY nor GEMINI_API_KEY is set')
     return res.status(500).json({ error: 'Server configuration error. Contact support.' })
   }
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -116,67 +199,30 @@ export default async function handler(req, res) {
   if (!messages || !Array.isArray(messages) || messages.length === 0) {
     return res.status(400).json({ error: 'Invalid request: expected { system, messages[] }' })
   }
-  // Validate each message has role + content
   for (const m of messages) {
     if (!m.role || !m.content) {
       return res.status(400).json({ error: 'Invalid message format: each message needs role and content' })
     }
   }
 
-  console.log(`[Generate] user=${user.id} section=${req.body.section || 'unknown'} max_tokens=${max_tokens} calls_today=${callsToday + 1}/${DAILY_CALL_LIMIT}`)
+  const provider = useAnthropic ? 'anthropic' : 'gemini'
+  console.log(`[Generate] user=${user.id} section=${req.body.section || 'unknown'} provider=${provider} calls_today=${callsToday + 1}/${DAILY_CALL_LIMIT}`)
 
-  // ── 7. Call Anthropic ──────────────────────────────────────────────────────
-  let anthropicRes, data
+  // ── 7. Call AI provider ────────────────────────────────────────────────────
+  let result
   try {
-    anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
-        max_tokens: Math.min(max_tokens, 8000),
-        system,
-        messages
-      })
-    })
-    data = await anthropicRes.json()
-  } catch (fetchErr) {
-    console.error('[Anthropic fetch error]', fetchErr.message)
-    return res.status(502).json({
-      error: `Connection to AI failed: ${fetchErr.message}. Please retry.`
-    })
+    result = useAnthropic
+      ? await callAnthropic(system, messages, max_tokens)
+      : await callGemini(system, messages, max_tokens)
+  } catch (err) {
+    if (err.status) {
+      return res.status(err.status).json({ error: err.msg })
+    }
+    console.error(`[${provider} fetch error]`, err.message)
+    return res.status(502).json({ error: `Connection to AI failed: ${err.message}. Please retry.` })
   }
 
-  if (!anthropicRes.ok) {
-    const errType = data?.error?.type || 'unknown'
-    const errMsg = data?.error?.message || JSON.stringify(data)
-    console.error('[Anthropic API error]', errType, errMsg)
+  console.log(`[Generate] done provider=${provider} stop_reason=${result.stop_reason} input=${result.usage?.input_tokens} output=${result.usage?.output_tokens}`)
 
-    if (errType === 'overloaded_error') {
-      return res.status(503).json({ error: 'AI is overloaded. Please wait 30 seconds and retry.' })
-    }
-    if (errType === 'rate_limit_error') {
-      return res.status(429).json({ error: 'Rate limit hit. Please wait 1 minute and retry.' })
-    }
-    if (errType === 'authentication_error') {
-      return res.status(500).json({ error: 'API key configuration error. Contact support.' })
-    }
-    if (errMsg.includes('max_tokens')) {
-      return res.status(400).json({ error: 'Response too long. Try selecting fewer resources.' })
-    }
-    return res.status(502).json({
-      error: `AI error (${errType}): ${errMsg.slice(0, 200)}`
-    })
-  }
-
-  if (data.stop_reason === 'max_tokens') {
-    console.warn('[Anthropic] Response truncated at max_tokens for user', user.id)
-  }
-
-  console.log(`[Generate] done stop_reason=${data.stop_reason} input_tokens=${data.usage?.input_tokens} output_tokens=${data.usage?.output_tokens}`)
-
-  return res.status(200).json(data)
+  return res.status(200).json(result)
 }
