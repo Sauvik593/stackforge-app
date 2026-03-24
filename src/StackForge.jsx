@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { callClaude } from "./api.js";
+import { callClaude, fetchTemplates } from "./api.js";
 
 // ─── Pure JS ZIP (no CDN - fixes download block) ──────────────────────────
 const buildZip = (() => {
@@ -127,6 +127,100 @@ const COMPLIANCE=[
   {id:"hipaa",  label:"HIPAA",     color:"#10b981",extra:"Enforce HIPAA: PHI encrypted at rest (AES-256) and in transit (TLS 1.2+), audit logs for all PHI access, automatic session timeout, BAA required for all services, no PHI in logs."},
   {id:"iso27001",label:"ISO 27001",color:"#8b5cf6",extra:"Enforce ISO 27001 Annex A controls: ISMS scope defined, risk register, asset inventory, change management, incident response, business continuity, supplier security."},
 ];
+
+// ─── Service-specific config properties shown in ResourceBuilder ─────────
+const IT_EC2   = ["t3.micro","t3.small","t3.medium","t3.large","t3.xlarge","t3.2xlarge","c5.large","c5.xlarge","c5.2xlarge","m5.large","m5.xlarge","m5.2xlarge","r5.large","r5.xlarge"];
+const IT_NODE  = ["t3.medium","t3.large","t3.xlarge","c5.xlarge","c5.2xlarge","m5.large","m5.xlarge"];
+const IT_CACHE = ["cache.t3.micro","cache.t3.small","cache.t3.medium","cache.r6g.large","cache.r6g.xlarge"];
+const IT_DB    = ["db.t3.micro","db.t3.small","db.t3.medium","db.t3.large","db.r5.large","db.r5.xlarge","db.r6g.large"];
+const SERVICE_PROPS={
+  ec2:[
+    {k:"instance_type", label:"Instance Type",  type:"select",  options:IT_EC2, default:"t3.medium"},
+    {k:"volume_size",   label:"Root Vol (GB)",   type:"number",  default:30},
+  ],
+  ec2_asg:[
+    {k:"instance_type", label:"Instance Type",  type:"select",  options:IT_EC2, default:"t3.medium"},
+    {k:"min_size",      label:"Min",            type:"number",  default:1},
+    {k:"desired_size",  label:"Desired",        type:"number",  default:2},
+    {k:"max_size",      label:"Max",            type:"number",  default:4},
+    {k:"volume_size",   label:"Root Vol (GB)",  type:"number",  default:30},
+  ],
+  eks_cluster:[
+    {k:"k8s_version",        label:"K8s Version",  type:"select",  options:["1.30","1.29","1.28","1.27"], default:"1.29"},
+    {k:"node_instance_type", label:"Node Type",    type:"select",  options:IT_NODE, default:"t3.medium"},
+    {k:"min_nodes",          label:"Min Nodes",    type:"number",  default:2},
+    {k:"max_nodes",          label:"Max Nodes",    type:"number",  default:8},
+  ],
+  rds_postgres:[
+    {k:"db_class",       label:"Instance Class", type:"select", options:IT_DB,  default:"db.t3.medium"},
+    {k:"storage_gb",     label:"Storage (GB)",   type:"number",                 default:50},
+    {k:"engine_version", label:"PG Version",     type:"select", options:["16.1","15.4","14.9","13.12"], default:"15.4"},
+    {k:"multi_az",       label:"Multi-AZ",       type:"toggle",                 default:false},
+  ],
+  rds_mysql:[
+    {k:"db_class",       label:"Instance Class", type:"select", options:IT_DB,  default:"db.t3.medium"},
+    {k:"storage_gb",     label:"Storage (GB)",   type:"number",                 default:50},
+    {k:"engine_version", label:"MySQL Version",  type:"select", options:["8.0.36","8.0.33","5.7.44"], default:"8.0.36"},
+    {k:"multi_az",       label:"Multi-AZ",       type:"toggle",                 default:false},
+  ],
+  rds_mariadb:[
+    {k:"db_class",       label:"Instance Class", type:"select", options:IT_DB,  default:"db.t3.medium"},
+    {k:"storage_gb",     label:"Storage (GB)",   type:"number",                 default:50},
+    {k:"engine_version", label:"MariaDB Version",type:"select", options:["10.11.6","10.6.17","10.5.23"], default:"10.11.6"},
+  ],
+  aurora_pg:[
+    {k:"db_class",       label:"Instance Class", type:"select", options:IT_DB,  default:"db.r5.large"},
+    {k:"engine_version", label:"PG Version",     type:"select", options:["16.1","15.4","14.9"], default:"15.4"},
+    {k:"num_instances",  label:"Instances",      type:"number",                 default:2},
+  ],
+  aurora_mysql:[
+    {k:"db_class",       label:"Instance Class", type:"select", options:IT_DB,  default:"db.r5.large"},
+    {k:"engine_version", label:"MySQL Version",  type:"select", options:["8.0.mysql_aurora.3.04.0","5.7.mysql_aurora.2.11.4"], default:"8.0.mysql_aurora.3.04.0"},
+    {k:"num_instances",  label:"Instances",      type:"number",                 default:2},
+  ],
+  elasticache_r:[
+    {k:"node_type",          label:"Node Type",  type:"select", options:IT_CACHE, default:"cache.t3.micro"},
+    {k:"num_cache_clusters", label:"Nodes",      type:"number",                   default:1},
+    {k:"engine_version",     label:"Redis Ver",  type:"select", options:["7.1","7.0","6.2"], default:"7.1"},
+  ],
+  elasticache_m:[
+    {k:"node_type",     label:"Node Type", type:"select", options:IT_CACHE, default:"cache.t3.micro"},
+    {k:"num_nodes",     label:"Nodes",     type:"number",                   default:1},
+  ],
+  alb:[
+    {k:"scheme", label:"Scheme", type:"select", options:["internet-facing","internal"], default:"internet-facing"},
+  ],
+  nlb:[
+    {k:"scheme", label:"Scheme", type:"select", options:["internet-facing","internal"], default:"internet-facing"},
+  ],
+  s3:[
+    {k:"versioning", label:"Versioning", type:"select", options:["Enabled","Disabled"], default:"Enabled"},
+  ],
+  ebs:[
+    {k:"volume_type", label:"Volume Type", type:"select", options:["gp3","gp2","io1","io2","sc1","st1"], default:"gp3"},
+    {k:"volume_size_gb", label:"Size (GB)", type:"number", default:100},
+  ],
+  compute_engine:[
+    {k:"machine_type", label:"Machine Type", type:"select", options:["e2-micro","e2-small","e2-medium","n1-standard-1","n1-standard-2","n1-standard-4","n2-standard-2","n2-standard-4"], default:"n1-standard-2"},
+    {k:"disk_size_gb",  label:"Disk (GB)",   type:"number", default:50},
+  ],
+  gke_cluster:[
+    {k:"k8s_version",  label:"K8s Version",  type:"select", options:["1.29","1.28","1.27"], default:"1.29"},
+    {k:"machine_type", label:"Node Type",    type:"select", options:["e2-medium","e2-standard-2","e2-standard-4","n1-standard-2"], default:"e2-standard-2"},
+    {k:"min_nodes",    label:"Min Nodes",    type:"number", default:2},
+    {k:"max_nodes",    label:"Max Nodes",    type:"number", default:8},
+  ],
+  vm:[
+    {k:"vm_size", label:"VM Size", type:"select", options:["Standard_B1s","Standard_B2s","Standard_D2s_v3","Standard_D4s_v3","Standard_E2s_v3","Standard_E4s_v3"], default:"Standard_D2s_v3"},
+    {k:"disk_gb", label:"OS Disk (GB)", type:"number", default:64},
+  ],
+  aks_cluster:[
+    {k:"k8s_version",  label:"K8s Version", type:"select", options:["1.29.0","1.28.5","1.27.9"], default:"1.29.0"},
+    {k:"vm_size",      label:"Node VM Size", type:"select", options:["Standard_D2s_v3","Standard_D4s_v3","Standard_D8s_v3"], default:"Standard_D2s_v3"},
+    {k:"min_nodes",    label:"Min Nodes",   type:"number", default:2},
+    {k:"max_nodes",    label:"Max Nodes",   type:"number", default:8},
+  ],
+};
 
 // ─── Category brand colors per cloud ─────────────────────────────────────
 const CAT_BG={
@@ -557,7 +651,7 @@ const buildTree=files=>{const root={};files.forEach(({path,content})=>{const par
 const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,20)||"myapp";
 
 // ─── Cache ────────────────────────────────────────────────────────────────
-const ck=form=>{const extras=[...form.extras].sort().join(",");const res=form.resources.map(r=>`${r.serviceId}:${r.names.join(",")}`).sort().join("|");const svcs=form.microservices.map(s=>s.name).join(",");const cfg=`${form.configTool}:${[...form.configPresets].sort().join(",")}`;return`sf:${form.cloud}:${form.pipeline}:${form.iacTool}:${form.deployTarget}:${extras}:${res}:${svcs}:${cfg}`.slice(0,180);};
+const ck=form=>{const extras=[...form.extras].sort().join(",");const res=form.resources.map(r=>`${r.serviceId}:${r.names.join(",")}:${JSON.stringify(r.props||{})}`).sort().join("|");const svcs=form.microservices.map(s=>s.name).join(",");const cfg=`${form.configTool}:${[...form.configPresets].sort().join(",")}`;return`sf:${form.cloud}:${form.pipeline}:${form.iacTool}:${form.deployTarget}:${extras}:${res}:${svcs}:${cfg}`.slice(0,200);};
 const cacheGet=async key=>{try{const r=await window.storage.get(key);return r?JSON.parse(r.value):null;}catch{return null;}};
 const cacheSet=async(key,val)=>{try{await window.storage.set(key,JSON.stringify(val));}catch{}};
 
@@ -569,7 +663,7 @@ const CN={aws:"AWS",azure:"Azure",gcp:"GCP"};
 const PN={github:"GitHub Actions",gitlab:"GitLab CI",azure_devops:"Azure Pipelines",jenkins:"Jenkins",codepipeline:"AWS CodePipeline",bitbucket:"Bitbucket Pipelines"};
 const SYS="You are a senior DevOps architect. Output ONLY file contents. Each file MUST start with '# File: path/filename.ext' on its own line, then a code block. No prose outside code blocks. Use the EXACT resource names provided. Ensure all code is syntactically valid.";
 
-const resSummary=rs=>rs.length?rs.map(r=>`- ${r.label} (${r.count}x): ${r.names.join(", ")}`).join("\n"):"No specific resources — use sensible defaults.";
+const resSummary=rs=>rs.length?rs.map(r=>{const props=r.props&&Object.keys(r.props).length>0?` [${Object.entries(r.props).map(([k,v])=>`${k}=${v}`).join(", ")}]`:"";return`- ${r.label} (${r.count}x): ${r.names.join(", ")}${props}`;}).join("\n"):"No specific resources — use sensible defaults.";
 const svcSummary=ss=>ss.length?ss.map(s=>`- ${s.name} (port ${s.port})`).join("\n"):"No named microservices.";
 
 const makePrompts=f=>{
@@ -1024,10 +1118,16 @@ function ResourceBuilder({cloud,resources,onChange}){
     (activeCat==="All"||activeCat===cat)?svcs.filter(s=>!search||s.label.toLowerCase().includes(search.toLowerCase())||s.abbr.toLowerCase().includes(search.toLowerCase())||s.desc.toLowerCase().includes(search.toLowerCase())).map(s=>({...s,cat})):[]
   );
 
-  const add=svc=>{if(selectedIds.includes(svc.id))return;onChange([...resources,{serviceId:svc.id,label:svc.label,abbr:svc.abbr,cat:svc.cat,count:1,names:[svc.id.replace(/_/g,"-")+"-1"]}]);};
+  const add=svc=>{
+    if(selectedIds.includes(svc.id))return;
+    const defProps={};
+    (SERVICE_PROPS[svc.id]||[]).forEach(f=>{defProps[f.k]=f.default;});
+    onChange([...resources,{serviceId:svc.id,label:svc.label,abbr:svc.abbr,cat:svc.cat,count:1,names:[svc.id.replace(/_/g,"-")+"-1"],props:defProps}]);
+  };
   const rem=id=>onChange(resources.filter(r=>r.serviceId!==id));
   const setCount=(id,c)=>{const n=Math.max(1,Math.min(8,c));onChange(resources.map(r=>{if(r.serviceId!==id)return r;const names=Array.from({length:n},(_,i)=>r.names[i]||(r.names[0]?.replace(/-\d+$/,"")||"svc")+"-"+(i+1));return{...r,count:n,names};}));};
   const setName=(id,idx,val)=>onChange(resources.map(r=>{if(r.serviceId!==id)return r;const names=[...r.names];names[idx]=val;return{...r,names};}));
+  const setProp=(id,key,val)=>onChange(resources.map(r=>r.serviceId!==id?r:{...r,props:{...(r.props||{}),[key]:val}}));
 
   return <div>
     {/* Search + category filter */}
@@ -1076,6 +1176,30 @@ function ResourceBuilder({cloud,resources,onChange}){
             <input value={name} onChange={e=>setName(r.serviceId,idx,e.target.value)} style={{background:"#0a1628",border:"1px solid #1e3a5f",color:"#38bdf8",borderRadius:5,padding:"4px 9px",fontFamily:"JetBrains Mono",fontSize:12,width:150,outline:"none"}} onFocus={e=>e.target.style.borderColor="#38bdf8"} onBlur={e=>e.target.style.borderColor="#1e3a5f"}/>
           </div>)}
         </div>
+        {/* Service-specific configuration properties */}
+        {SERVICE_PROPS[r.serviceId]&&<div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:8,paddingTop:8,borderTop:"1px solid #1e3a5f"}}>
+          {SERVICE_PROPS[r.serviceId].map(field=>{
+            const val=(r.props||{})[field.k]!==undefined?(r.props||{})[field.k]:field.default;
+            const inStyle={background:"#060d1a",border:"1px solid #1e3a5f",color:"#38bdf8",borderRadius:5,padding:"3px 7px",fontFamily:"JetBrains Mono",fontSize:11,outline:"none"};
+            return <div key={field.k} style={{display:"flex",flexDirection:"column",gap:2}}>
+              <span style={{fontSize:9,color:"#64748b",fontFamily:"JetBrains Mono",letterSpacing:1}}>{field.label.toUpperCase()}</span>
+              {field.type==="select"?
+                <select value={val} onChange={e=>setProp(r.serviceId,field.k,e.target.value)} style={{...inStyle,cursor:"pointer"}}>
+                  {field.options.map(o=><option key={o} value={o}>{o}</option>)}
+                </select>
+              :field.type==="toggle"?
+                <div onClick={()=>setProp(r.serviceId,field.k,!val)} style={{width:32,height:16,background:val?"#0ea5e9":"#1e3a5f",borderRadius:8,cursor:"pointer",position:"relative",transition:"background .2s"}}>
+                  <div style={{width:12,height:12,background:"#fff",borderRadius:"50%",position:"absolute",top:2,left:val?18:2,transition:"left .2s"}}/>
+                </div>
+              :
+                <input type="number" value={val} onChange={e=>setProp(r.serviceId,field.k,parseInt(e.target.value)||0)} style={{...inStyle,width:72}}/>
+              }
+            </div>;
+          })}
+          {SERVICE_PROPS[r.serviceId]&&<div style={{display:"flex",alignItems:"flex-end",marginLeft:2}}>
+            <span style={{fontSize:9,color:"#22c55e",fontFamily:"JetBrains Mono",background:"#0f2a1a",border:"1px solid #166534",borderRadius:4,padding:"2px 7px"}}>⚡ template ready</span>
+          </div>}
+        </div>}
       </div>)}
     </div>}
   </div>;
@@ -1797,12 +1921,33 @@ export default function App(){
     setFromCache(false);
     const results={},newCached={};
     const prompts=makePrompts(form);
+
+    // ── Step 1: Try template engine for iac / pipeline / config ─────────────
+    let templateData=null;
+    try{
+      setProgressIdx(0);
+      templateData=await fetchTemplates(form);
+    }catch(e){
+      console.warn("[Templates] Falling back to AI:",e.message);
+    }
+
+    if(templateData?.supported){
+      if(templateData.iac)   {results.iac=templateData.iac;      newCached.iac=false;      await cacheSet(`${key}:iac`,templateData.iac);}
+      if(templateData.pipeline){results.pipeline=templateData.pipeline;newCached.pipeline=false;await cacheSet(`${key}:pipeline`,templateData.pipeline);}
+      if(templateData.config){ results.config=templateData.config; newCached.config=false;  await cacheSet(`${key}:config`,templateData.config);}
+      setOutputs({...results});
+      const f=parseFiles(results.iac||"");if(f.length)setSelectedFile(f[0]);
+    }
+
+    // ── Step 2: AI for remaining tabs ────────────────────────────────────────
     for(let i=0;i<TABS.length;i++){
-      const tab=TABS[i];setProgressIdx(i);
+      const tab=TABS[i];
+      if(results[tab.id])continue; // already filled by template
+      setProgressIdx(i);
       const sKey=`${key}:${tab.id}`;
       const cs=await cacheGet(sKey);
-      if(cs){results[tab.id]=cs;newCached[tab.id]=true;setOutputs({...results});if(i===0){const f=parseFiles(cs);if(f.length)setSelectedFile(f[0]);}continue;}
-      try{const p=prompts[tab.id];const text=await callClaude(p.system,p.user,tab.id);results[tab.id]=text;newCached[tab.id]=false;await cacheSet(sKey,text);setOutputs({...results});if(i===0){const f=parseFiles(text);if(f.length)setSelectedFile(f[0]);}}
+      if(cs){results[tab.id]=cs;newCached[tab.id]=true;setOutputs({...results});if(!results.iac&&i===0){const f=parseFiles(cs);if(f.length)setSelectedFile(f[0]);}continue;}
+      try{const p=prompts[tab.id];const text=await callClaude(p.system,p.user,tab.id);results[tab.id]=text;newCached[tab.id]=false;await cacheSet(sKey,text);setOutputs({...results});if(!results.iac&&i===0){const f=parseFiles(text);if(f.length)setSelectedFile(f[0]);}}
       catch(e){results[tab.id]=`❌ Failed: ${e.message}`;newCached[tab.id]=false;setOutputs({...results});}
     }
     await cacheSet(key,results);setCachedSections(newCached);setStep(4);setLoading(false);setProgressIdx(-1);
@@ -2140,13 +2285,17 @@ ${form.configTool?`├── ${form.configTool}/ ← ${form.configPresets.length
             {form.resources.map(r=><div key={r.serviceId} style={{background:"#060d1a",border:"1px solid #1e3a5f",borderRadius:8,padding:"9px 12px",minWidth:140}}>
               <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}><ServiceBadge abbr={r.abbr} cat={r.cat} cloud={form.cloud} size={20}/><span style={{fontWeight:700,fontSize:11,color:"#e2e8f0",fontFamily:"JetBrains Mono"}}>{r.label}</span></div>
               {r.names.map((n,i)=><div key={i} style={{fontSize:10,color:"#38bdf8",fontFamily:"JetBrains Mono",padding:"1px 0"}}>#{i+1} {n||"(unnamed)"}</div>)}
+              {r.props&&Object.keys(r.props).length>0&&<div style={{marginTop:5,display:"flex",flexWrap:"wrap",gap:4}}>
+                {Object.entries(r.props).map(([k,v])=><span key={k} style={{fontSize:9,color:"#64748b",fontFamily:"JetBrains Mono",background:"#060d1a",border:"1px solid #1e3a5f",borderRadius:3,padding:"1px 5px"}}>{k.replace(/_/g," ")}: <span style={{color:"#94a3b8"}}>{String(v)}</span></span>)}
+              </div>}
+              {SERVICE_PROPS[r.serviceId]&&<div style={{marginTop:4}}><span style={{fontSize:9,color:"#22c55e",fontFamily:"JetBrains Mono"}}>⚡ template</span></div>}
             </div>)}
           </div>
         </div>}
 
         {loading&&<div style={{background:"#0a1628",border:"1px solid #1e3a5f",borderRadius:10,padding:13,marginBottom:11}}>
           <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-            {TABS.map((t,i)=>{const done=progressIdx>i,active=progressIdx===i,cached=cachedSections[t.id];return <div key={t.id} style={{display:"flex",alignItems:"center",gap:4,padding:"4px 9px",borderRadius:20,background:done?(cached?"#0f1f0f":"#0f2a1a"):active?"#0f2944":"#060d1a",border:`1px solid ${done?(cached?"#22c55e":"#16a34a"):active?"#38bdf8":"#1e3a5f"}`,fontSize:10,fontFamily:"JetBrains Mono",color:done?(cached?"#22c55e":"#4ade80"):active?"#38bdf8":"#475569"}}>
+            {TABS.map((t,i)=>{const done=progressIdx>i,active=progressIdx===i,cached=cachedSections[t.id];const isTemplate=done&&outputs?.[t.id]&&!cachedSections[t.id];return <div key={t.id} title={isTemplate?"Generated from template (instant, no AI call)":"AI generated"} style={{display:"flex",alignItems:"center",gap:4,padding:"4px 9px",borderRadius:20,background:done?(cached?"#0f1f0f":"#0f2a1a"):active?"#0f2944":"#060d1a",border:`1px solid ${done?(cached?"#22c55e":"#16a34a"):active?"#38bdf8":"#1e3a5f"}`,fontSize:10,fontFamily:"JetBrains Mono",color:done?(cached?"#22c55e":"#4ade80"):active?"#38bdf8":"#475569"}}>
               {done?(cached?"💾":"✓"):active?<span style={{width:7,height:7,borderRadius:"50%",border:"1.5px solid #38bdf8",borderTopColor:"transparent",display:"inline-block",animation:"spin .7s linear infinite"}}/>:"○"}
               <span>{t.label}</span>
             </div>;})}

@@ -1,6 +1,6 @@
-// src/api.js — authenticated Anthropic proxy
-// Sends JWT to Vercel serverless, which uses owner's API key.
-// Users never need their own Anthropic account.
+// src/api.js — authenticated AI proxy + template engine
+// callClaude: sends JWT to Vercel serverless, which proxies to AI.
+// fetchTemplates: calls /api/templates for pre-built infrastructure code.
 
 import { supabase } from './supabase.js'
 
@@ -85,4 +85,26 @@ export async function callClaude(system, user, section = 'unknown') {
   }
 
   throw lastError || new Error('Request failed after retries. Please try again.')
+}
+
+// ── Template engine: pre-built infra, no AI needed ────────────────────────
+export async function fetchTemplates(form) {
+  const { data: { session }, error: sessionErr } = await supabase.auth.getSession()
+  if (sessionErr || !session) throw new Error('Not authenticated.')
+
+  const res = await fetch('/api/templates', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`
+    },
+    body: JSON.stringify(form)
+  })
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(data.error || `Templates API error ${res.status}`)
+  }
+
+  return res.json()
 }
