@@ -118,11 +118,11 @@ export default async function handler(req, res) {
   const useAnthropic = !useGemini && !!process.env.ANTHROPIC_API_KEY
   if (!useAnthropic && !useGemini) {
     console.error('[Config] Neither ANTHROPIC_API_KEY nor GEMINI_API_KEY is set')
-    return res.status(500).json({ error: 'Server configuration error. Contact support.' })
+    return res.status(500).json({ error: 'Config error: GEMINI_API_KEY not set in Vercel environment variables.' })
   }
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     console.error('[Config] SUPABASE_SERVICE_ROLE_KEY is not set')
-    return res.status(500).json({ error: 'Server configuration error. Contact support.' })
+    return res.status(500).json({ error: 'Config error: SUPABASE_SERVICE_ROLE_KEY not set in Vercel environment variables.' })
   }
 
   // ── 1. Extract + verify Supabase JWT ──────────────────────────────────────
