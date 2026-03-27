@@ -4,6 +4,7 @@
 // OWNER's API key is used — users never need their own.
 
 import { createClient } from '@supabase/supabase-js'
+import { getQueryEmbedding } from './embed.js'
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
@@ -214,7 +215,7 @@ export default async function handler(req, res) {
   }).eq('user_id', user.id)
 
   // ── 6. Parse + validate request body ──────────────────────────────────────
-  const { system, messages, max_tokens = 8000 } = req.body || {}
+  const { system, messages, max_tokens = 8000, section = 'unknown' } = req.body || {}
   if (!messages || !Array.isArray(messages) || messages.length === 0) {
     return res.status(400).json({ error: 'Invalid request: expected { system, messages[] }' })
   }
@@ -225,14 +226,72 @@ export default async function handler(req, res) {
   }
 
   const provider = useAnthropic ? 'anthropic' : 'gemini'
-  console.log(`[Generate] user=${user.id} section=${req.body.section || 'unknown'} provider=${provider} calls_today=${callsToday + 1}/${DAILY_CALL_LIMIT}`)
+  console.log(`[Generate] user=${user.id} section=${section} provider=${provider} calls_today=${callsToday + 1}/${DAILY_CALL_LIMIT}`)
 
-  // ── 7. Call AI provider ────────────────────────────────────────────────────
+  // ── 7. RAG: retrieve similar templates and inject as context ──────────────
+  // Only runs when GEMINI_API_KEY is set (used for embeddings too).
+  // Skips silently on any error — RAG is best-effort, not critical path.
+  let augmentedSystem = system
+
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      // Build a concise query from the user message content
+      const userText = messages.find(m => m.role === 'user')?.content || ''
+      const queryText = userText.slice(0, 1500)
+
+      const queryEmbedding = await getQueryEmbedding(queryText)
+
+      // Determine filters from section name hint
+      const filterCloud = queryText.match(/\b(aws|azure|gcp)\b/i)?.[1]?.toLowerCase() || null
+      const categoryMap = { iac: 'iac', pipeline: 'pipeline', config: 'config', security: 'security', observability: 'observability' }
+      const filterCategory = categoryMap[section] || null
+
+      const { data: matches, error: ragErr } = await supabase.rpc('match_stack_templates', {
+        query_embedding: queryEmbedding,
+        match_count: 3,
+        filter_cloud: filterCloud,
+        filter_category: filterCategory,
+        min_similarity: 0.45
+      })
+
+      if (!ragErr && matches?.length > 0) {
+        const contextBlock = matches
+          .map(m => `### ${m.name} (similarity: ${m.similarity.toFixed(2)})\n${m.description}\n\n${m.content.slice(0, 3000)}`)
+          .join('\n\n---\n\n')
+
+        augmentedSystem = `${system || ''}
+
+══════════════════════════════════════════════════════
+REFERENCE TEMPLATES (retrieved via semantic similarity)
+Use these as style and structure guides. Follow the same
+module patterns, variable naming, and file organization.
+══════════════════════════════════════════════════════
+
+${contextBlock}
+
+══════════════════════════════════════════════════════
+END REFERENCE TEMPLATES — now generate for this request:
+══════════════════════════════════════════════════════`
+
+        // Bump usage counts (fire-and-forget)
+        for (const m of matches) {
+          supabase.rpc('increment_template_usage', { template_id: m.id }).catch(() => {})
+        }
+
+        console.log(`[RAG] section=${section} matches=${matches.length} cloud=${filterCloud || 'any'} cat=${filterCategory || 'any'}`)
+      }
+    } catch (ragErr) {
+      // Non-fatal — log and continue with original system prompt
+      console.warn('[RAG] Skipped:', ragErr.message)
+    }
+  }
+
+  // ── 8. Call AI provider ────────────────────────────────────────────────────
   let result
   try {
     result = useAnthropic
-      ? await callAnthropic(system, messages, max_tokens)
-      : await callGemini(system, messages, max_tokens)
+      ? await callAnthropic(augmentedSystem, messages, max_tokens)
+      : await callGemini(augmentedSystem, messages, max_tokens)
   } catch (err) {
     if (err.status) {
       return res.status(err.status).json({ error: err.msg })

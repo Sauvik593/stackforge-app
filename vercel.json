@@ -5,10 +5,12 @@
     { "source": "/((?!.*\\.).+)", "destination": "/index.html" }
   ],
   "functions": {
-    "api/claude.js":    { "maxDuration": 90 },
-    "api/templates.js": { "maxDuration": 10 },
-    "api/webhook.js":   { "maxDuration": 30 },
-    "api/sitemap.js":   { "maxDuration": 5  }
+    "api/claude.js":           { "maxDuration": 90 },
+    "api/templates.js":        { "maxDuration": 10 },
+    "api/webhook.js":          { "maxDuration": 30 },
+    "api/sitemap.js":          { "maxDuration": 5  },
+    "api/embed.js":            { "maxDuration": 60 },
+    "api/admin-templates.js":  { "maxDuration": 60 }
   },
   "headers": [
     {
